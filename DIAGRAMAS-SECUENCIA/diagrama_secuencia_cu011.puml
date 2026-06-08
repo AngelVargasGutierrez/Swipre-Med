@@ -1,5 +1,5 @@
 @startuml Secuencia_CU011_Analisis
-title "Diagrama de Secuencia — CU011 (Análisis / Lenguaje Natural)\nVisualizar Semáforo de Vencimientos"
+title "Diagrama de Secuencia — CU011 (Análisis / Lenguaje Natural)\nGenerar Alertas Automáticas de Semáforos"
 
 skinparam {
   backgroundColor    #FFFFFF

@@ -2,7 +2,7 @@
 
 top to bottom direction
 
-title "Diagrama de Robustez — CU011 (Análisis / Lenguaje Natural)\nVisualizar Semáforo de Vencimientos · RF-011 · MOPGIMED"
+title "Diagrama de Robustez — CU011 (Análisis / Lenguaje Natural)\nGenerar Alertas Automáticas de Semáforos · RF-011 · MOPGIMED"
 
 skinparam {
   backgroundColor    #FFFFFF

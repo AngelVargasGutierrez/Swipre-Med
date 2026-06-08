@@ -1,5 +1,5 @@
 @startuml Secuencia_CU011_Codigo_MOPGIMED
-title "Diagrama de Secuencia — CU011 (fiel al código)\nVisualizar Semáforo de Vencimientos · RF-011"
+title "Diagrama de Secuencia — CU011 (fiel al código)\nGenerar Alertas Automáticas de Semáforos · RF-011"
 
 skinparam {
   backgroundColor    #FFFFFF

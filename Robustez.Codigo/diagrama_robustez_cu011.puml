@@ -2,7 +2,7 @@
 
 top to bottom direction
 
-title "Diagrama de Robustez — CU011: Visualizar Semáforo de Vencimientos (RF-011)\nMOPGIMED · Fiel al Código"
+title "Diagrama de Robustez — CU011: Generar Alertas Automáticas de Semáforos (RF-011)\nMOPGIMED · Fiel al Código"
 
 skinparam {
   backgroundColor    #FFFFFF
