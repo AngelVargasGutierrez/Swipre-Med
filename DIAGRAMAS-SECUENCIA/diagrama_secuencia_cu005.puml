@@ -1,0 +1,109 @@
+@startuml Secuencia CU005 MOPGIMED
+
+title "Diagrama de Secuencia — CU005: Registrar Medicamento Nuevo con Asistencia IA (RF-005)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Personal del Hospital" as ACTOR
+
+box "Frontera — Pantallas que ve el personal" #EFF6FF
+  participant "Barra de Busqueda\nInteligente con IA" as B1
+  participant "Lista de Variantes\ny Sugerencias IA" as B2
+  participant "Panel de Registro\ndel Medicamento" as B3
+  participant "Confirmacion o\nAviso de Error" as B4
+end box
+
+box "Control — Procesos internos del sistema" #FFFBEB
+  participant "Buscador Local\nen Inventario" as C1
+  participant "Motor de Inteligencia\nArtificial (Gemini)" as C2
+  participant "Combinador de\nVariantes" as C3
+  participant "Registrador de\nMedicamento o Lote" as C4
+  participant "Registrador\nde Actividad" as C5
+end box
+
+box "Entidad — Informacion guardada" #ECFDF5
+  participant "Inventario de\nMedicamentos" as E1
+  participant "Catalogo de\nRespaldo Local" as E2
+  participant "Historial\nde Actividad" as E3
+end box
+
+== Fase 1: busqueda local mientras el personal escribe ==
+
+ACTOR -> B1 : Abre Gestion de Medicamentos\ny escribe el nombre a buscar
+B1 -> C1 : Filtra variantes\nen el inventario actual
+C1 -> E1 : Busca coincidencias\nen los medicamentos existentes
+E1 --> C1 : Devuelve medicamentos\nque coinciden con el texto
+C1 -> B2 : Muestra variantes\nlocales de inmediato
+B2 --> ACTOR : El personal ve las opciones\nmientras sigue escribiendo
+
+== Fase 2: busqueda ampliada con Inteligencia Artificial ==
+
+B1 -> C3 : Consulta variantes ampliadas\nal servidor con IA
+C3 -> E1 : Verifica si el medicamento\nya existe en inventario
+C3 -> E2 : Busca en el catalogo\nde respaldo local
+
+alt Gemini IA responde correctamente
+  C3 -> C2 : Pide al motor IA\ngenerar variantes farmaceuticas
+  C2 --> C3 : Devuelve lista de\nvariantes sugeridas por IA
+else Gemini no esta disponible
+  C3 -> C3 : Usa solo el catalogo local\ny el inventario propio
+end
+
+C3 -> B2 : Combina y fusiona todas\nlas variantes encontradas
+B2 --> ACTOR : Lista actualizada;\ncada opcion muestra si ya esta\nen el inventario o es sugerencia IA
+
+== Fase 3: seleccion y registro del medicamento ==
+
+ACTOR -> B2 : Elige una variante\nde la lista desplegable
+B2 -> B3 : Carga el formulario\ncon los datos de la variante
+B3 --> ACTOR : Muestra los campos:\nnombre, laboratorio, lote,\nvencimiento, costos y stock
+
+ACTOR -> B3 : Completa los datos\ny pulsa "Registrar Medicamento"
+
+alt El medicamento ya existe en inventario
+  B3 -> C4 : Registra un nuevo lote\nal medicamento existente
+  C4 -> E1 : Suma el stock nuevo\nal existente y actualiza el lote
+  C4 -> C5 : Notifica el registro\nde nuevo lote
+  C5 -> E3 : Guarda usuario, fecha\ny detalle del lote registrado
+  C4 -> B4 : Lote registrado correctamente
+  B4 --> ACTOR : Confirmacion;\nel formulario se limpia listo\npara una nueva busqueda
+
+else El medicamento es nuevo en el sistema
+  B3 -> C4 : Crea el medicamento\ncon todos sus datos
+  C4 -> E1 : Inserta el nuevo\nmedicamento en el inventario
+  C4 -> B4 : Medicamento registrado correctamente
+  B4 --> ACTOR : Confirmacion;\nel medicamento queda\nen el catalogo del sistema
+end
+
+@enduml

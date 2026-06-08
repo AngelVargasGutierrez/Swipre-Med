@@ -1,6 +1,6 @@
 @startuml Secuencia CU002 MOPGIMED
 
-title "Diagrama de Secuencia — CU002: Gestionar Medicamentos\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+title "Diagrama de Secuencia — CU002: Gestionar Usuarios y Asignar Rol\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
 
 autonumber
 
@@ -35,65 +35,94 @@ skinparam box {
   FontSize 11
 }
 
-actor "Personal Autorizado\n(Farmacia / Admin)" as ACTOR
+actor "Administrador\ndel Sistema" as ACTOR
 
-box "Frontera — Pantallas que ve el personal" #EFF6FF
-  participant "Lista de\nMedicamentos" as B1
-  participant "Formulario del\nMedicamento" as B2
-  participant "Confirmacion de\nEliminacion" as B3
-  participant "Mensaje\nde Resultado" as B4
+box "Frontera — Pantallas que ve el Administrador" #EFF6FF
+  participant "Pantalla de\nGestion de Usuarios" as B1
+  participant "Formulario\nNuevo / Editar Usuario" as B2
+  participant "Aviso de\nError de Datos" as B3
 end box
 
 box "Control — Procesos internos del sistema" #FFFBEB
-  participant "Buscador y\nCargador de Lista" as C1
-  participant "Validador,\nGuardador y Eliminador" as C2
-  participant "Registrador\nde Actividad" as C3
+  participant "Gestor\nde Usuarios" as C1
+  participant "Validador\nde Datos" as C2
+  participant "Asignador\nde Rol" as C3
+  participant "Registrador\nde Actividad" as C4
 end box
 
 box "Entidad — Informacion guardada" #ECFDF5
-  participant "Fichas de\nMedicamentos" as E1
-  participant "Catalogo de Labs\ny Categorias" as E2
+  participant "Registro\nde Usuarios" as E1
+  participant "Tabla\nde Roles" as E2
   participant "Historial\nde Actividad" as E3
 end box
 
-group Ver y buscar medicamentos
-  ACTOR -> B1 : Accede a la lista\nde medicamentos
-  B1 -> C1 : Solicita cargar o\nbuscar medicamentos
-  C1 -> E1 : Consulta las fichas\nguardadas en el sistema
-  E1 --> C1 : Devuelve la lista\nde medicamentos
-  C1 --> B1 : Muestra la lista actualizada
-  B1 --> ACTOR : El personal ve todos\nlos medicamentos registrados
+== Consultar lista de usuarios ==
+
+ACTOR -> B1 : Accede al modulo\nGestion de Usuarios
+B1 -> C1 : Solicita la lista\nde usuarios registrados
+C1 -> E1 : Consulta todos\nlos usuarios del sistema
+E1 --> C1 : Devuelve nombre, usuario,\nrol, estado y fecha de creacion
+C1 --> B1 : Retorna lista completa\nde usuarios
+B1 --> ACTOR : Muestra la tabla con todos\nlos usuarios del sistema
+
+== Crear nuevo usuario con rol ==
+
+ACTOR -> B1 : Hace clic en\n"Nuevo Usuario"
+B1 -> B2 : Abre formulario\nvacio de registro
+B2 --> ACTOR : Muestra campos: nombre, usuario,\ncontrasena, rol y email
+
+ACTOR -> B2 : Completa los campos\ny selecciona el rol
+B2 -> C2 : Envia datos\npara validacion
+
+alt Datos incompletos o usuario ya existe
+  C2 -> E1 : Verifica si el nombre\nde usuario ya esta registrado
+  E1 --> C2 : Confirma que el usuario\nesta duplicado o faltan campos
+  C2 -> B3 : Datos invalidos
+  B3 --> ACTOR : Muestra el aviso de error;\nel administrador corrige e intenta de nuevo
+
+else Datos validos y usuario disponible
+  C2 -> C3 : Datos correctos;\nprocede a asignar el rol
+  C3 -> E2 : Consulta la etiqueta\ndel rol seleccionado
+  E2 --> C3 : Devuelve la etiqueta\ndel rol correspondiente
+  C3 -> C1 : Rol asignado;\nprocede a crear el usuario
+  C1 -> E1 : Inserta nuevo usuario\ncon rol y estado Activo
+  E1 --> C1 : Confirma la insercion\ncon el identificador generado
+  C1 -> C4 : Notifica que se\ncreo un nuevo usuario
+  C4 -> E3 : Guarda quien creo el usuario,\nnombre del nuevo usuario y fecha
+  C1 --> B1 : Actualiza la lista\ncon el nuevo usuario
+  B1 --> ACTOR : Muestra el usuario creado\nen la tabla del sistema
 end
 
-group Registrar nuevo medicamento o editar uno existente
-  ACTOR -> B2 : Abre el formulario para\nregistrar o editar
-  B2 -> C2 : Envia los datos\ndel formulario
-  C2 -> E2 : Verifica laboratorio\ny categoria validos
-  E2 --> C2 : Confirma los datos del catalogo
+== Editar usuario y cambiar rol ==
 
-  alt Datos incompletos o incorrectos
-    C2 --> B4 : Informa campos\nmal o faltantes
-    B4 --> ACTOR : El personal corrige\ne intenta de nuevo
-  else Datos correctos
-    note over C2 : El sistema calcula automaticamente\nsi el stock es Normal, Bajo o Critico
-    C2 -> E1 : Guarda o actualiza\nla ficha del medicamento
-    C2 -> C3 : Notifica el cambio realizado
-    C3 -> E3 : Registra quien hizo el cambio,\nque cambio y cuando
-    C2 --> B4 : Operacion exitosa
-    B4 --> ACTOR : El personal ve la confirmacion\ndel medicamento guardado
-  end
-end
+ACTOR -> B1 : Hace clic en el icono\nEditar de un usuario
+B1 -> C1 : Solicita datos actuales\ndel usuario seleccionado
+C1 -> E1 : Busca el usuario\npor su identificador
+E1 --> C1 : Devuelve datos actuales\ndel usuario
+C1 --> B2 : Carga formulario\ncon datos ya completados
+B2 --> ACTOR : Muestra formulario con\ndatos editables y selector de rol
+ACTOR -> B2 : Modifica los campos que desee,\nincluido el rol si fuera necesario
+B2 -> C2 : Envia datos modificados\npara validar
+C2 -> C3 : Valida y procesa\nel nuevo rol seleccionado
+C3 -> C1 : Datos correctos;\nprocede a actualizar el usuario
+C1 -> E1 : Ejecuta actualizacion\nsobre el registro del usuario
+E1 --> C1 : Confirma la actualizacion
+C1 -> C4 : Notifica la modificacion\nrealizada
+C4 -> E3 : Guarda quien modifico,\nusuario afectado y fecha
+C1 --> B1 : Refresca la lista\ncon datos actualizados
+B1 --> ACTOR : Muestra el usuario con\nlos cambios aplicados
 
-group Eliminar un medicamento
-  ACTOR -> B3 : Solicita eliminar\nun medicamento
-  B3 --> ACTOR : Pide confirmacion:\nesta seguro?
-  ACTOR -> B3 : Confirma la eliminacion
-  B3 -> C2 : Envia la orden de eliminacion
-  C2 -> E1 : Elimina la ficha\ndel medicamento
-  C2 -> C3 : Notifica la eliminacion
-  C3 -> E3 : Registra quien elimino,\nque y cuando
-  C2 --> B4 : Eliminacion completada
-  B4 --> ACTOR : El personal ve que el\nmedicamento fue eliminado
-end
+== Activar o Desactivar usuario ==
+
+ACTOR -> B1 : Hace clic en el icono\nde estado del usuario
+B1 -> C1 : Solicita cambio de\nestado del usuario
+C1 -> E1 : Consulta el estado\nactual del usuario
+E1 --> C1 : Devuelve el estado actual\n(Activo o Inactivo)
+C1 -> E1 : Cambia el estado\nal valor opuesto
+E1 --> C1 : Confirma el cambio\nde estado
+C1 -> C4 : Notifica el cambio\nde estado realizado
+C4 -> E3 : Guarda quien cambio el estado,\nusuario afectado, nuevo estado y fecha
+C1 --> B1 : Devuelve el nuevo\nestado del usuario
+B1 --> ACTOR : Actualiza el indicador de\nestado en la tabla
 
 @enduml

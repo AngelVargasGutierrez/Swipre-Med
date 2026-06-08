@@ -1,0 +1,110 @@
+@startuml Robustez_CU010_Analisis
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU010 (Análisis / Lenguaje Natural)\nVisualizar Semáforo de Stock · RF-010 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+' ─────────────────────────────────────────
+'  ACTOR
+' ─────────────────────────────────────────
+actor "Logística / Jefatura" as ACTOR
+
+' ─────────────────────────────────────────
+'  FILA 1 — Entidades
+' ─────────────────────────────────────────
+package "Entidad — Información guardada en el sistema" as PKG_E {
+  entity "Datos de Inventario\n──────────────────────\nTodos los registros de medicamentos\ncon sus niveles de stock" as E1
+  entity "Reglas de Semáforo\n──────────────────────\nLógica que define qué es\nCrítico, Bajo o Normal" as E2
+  E1 -[hidden]right-> E2
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera
+' ─────────────────────────────────────────
+package "Frontera — Pantallas que ve el personal" as PKG_B {
+  boundary "Tarjetas de Resumen\n──────────────\nMuestra el conteo de medicamentos\nCríticos, Bajos y Por Vencer" as B1
+  boundary "Tabla de Control de Stock\n──────────────\nMuestra la lista detallada\ncon indicadores visuales" as B2
+  B1 -[hidden]down-> B2
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Control
+' ─────────────────────────────────────────
+package "Control — Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Consultor de Stock\n──────────────\nExtrae los datos de inventario\ny las cantidades mínimas" as C1
+  control "Evaluador de Estado\n──────────────\nCompara el stock actual contra el mínimo\ny aplica la regla de semáforo" as C2
+  control "Formateador Visual\n──────────────\nAsigna colores y agrupa datos\npara mostrar en pantalla" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+' ─────────────────────────────────────────
+'  Posicionamiento
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+' ─────────────────────────────────────────
+'  FLUJO
+' ─────────────────────────────────────────
+
+ACTOR --> B1  : 1. Ingresa al módulo\nde Control de Inventario
+B1    --> C1  : 2. Solicita evaluación del stock
+C1    --> E1  : 3. Lee todos los medicamentos y cantidades
+E1    --> C1  : 4. Retorna niveles de stock
+C1    --> C2  : 5. Envía a evaluar
+C2    --> E2  : 6. Consulta reglas de negocio (stock <= mínimo)
+C2    --> C3  : 7. Envía datos con estado calculado (Crítico/Bajo/Normal)
+C3    --> B1  : 8. Actualiza conteo en tarjetas
+C3    --> B2  : 9. Muestra listado con semáforo visual coloreado
+
+@enduml

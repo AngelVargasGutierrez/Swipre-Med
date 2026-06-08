@@ -117,6 +117,7 @@ export default function ControlInventario() {
                 <th>Stock</th>
                 <th>Estado Stock</th>
                 <th>Fecha Vencimiento</th>
+                <th>Estado Venc.</th>
                 <th>Días Restantes</th>
                 <th>Lote</th>
               </tr>
@@ -141,15 +142,14 @@ export default function ControlInventario() {
                     </td>
                     <td style={{ fontSize:13 }}>{m.vencimiento}</td>
                     <td>
-                      {dias < 0 ? (
-                        <span className="badge" style={{ background:'#f3f4f6', color:'#6b7280' }}>Vencido</span>
-                      ) : dias <= 30 ? (
-                        <span className="badge red">{dias} días</span>
-                      ) : dias <= 90 ? (
-                        <span className="badge yellow">{dias} días</span>
-                      ) : (
-                        <span style={{ fontSize:13, color:'#64748b' }}>{dias} días</span>
-                      )}
+                      <span className={`badge ${dias < 0 ? 'red' : dias <= 90 ? 'yellow' : 'green'}`}>
+                        {dias < 0 ? 'Vencido' : dias <= 90 ? 'Por Vencer' : 'Vigente'}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize:13, color:'#64748b' }}>
+                        {dias < 0 ? '—' : `${dias} días`}
+                      </span>
                     </td>
                     <td style={{ fontFamily:'monospace', fontSize:12, color:'#475569' }}>{m.lote}</td>
                   </tr>

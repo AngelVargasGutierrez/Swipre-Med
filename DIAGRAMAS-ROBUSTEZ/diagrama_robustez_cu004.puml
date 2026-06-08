@@ -1,8 +1,8 @@
-@startuml Robustez - CU004 Historial de Acciones MOPGIMED
+@startuml Robustez - CU004 Registrar Lote MOPGIMED
 
 top to bottom direction
 
-title "Diagrama de Robustez — CU004: Visualizar Historial de Acciones\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+title "Diagrama de Robustez — CU004: Registrar Lote de Medicamento Existente (RF-004)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
 
 skinparam {
   backgroundColor    #FFFFFF
@@ -56,30 +56,43 @@ skinparam package {
 ' ─────────────────────────────────────────
 '  ACTOR
 ' ─────────────────────────────────────────
-actor "Personal Autorizado\n(Administrador / Jefatura)" as ACTOR
+actor "Personal\ndel Hospital" as ACTOR
 
 ' ─────────────────────────────────────────
-'  FILA 1 — Entidad (arriba, ancho completo)
+'  FILA 1 — Entidades (arriba, ancho completo)
 ' ─────────────────────────────────────────
 package "Entidad  —  Información guardada en el sistema" as PKG_E {
-  entity "Historial de Actividad\n──────────────────\nRegistro permanente de cada\nacción: usuario · cargo · módulo\noperación realizada · fecha · hora" as E1
+  entity "Inventario de Medicamentos\n──────────────────\nNombre · Laboratorio · Lote\nStock · Vencimiento · Estado · Costos" as E1
+  entity "Catálogo de Laboratorios\n──────────────────\nLista de fabricantes disponibles\npara filtrar la búsqueda" as E2
+  entity "Historial de Actividad\n──────────────────\nFecha · Hora · Usuario\nDetalle del lote registrado" as E3
+  E1 -[hidden]right-> E2
+  E2 -[hidden]right-> E3
 }
 
 ' ─────────────────────────────────────────
-'  FILA 2 — Frontera (izquierda) y Control (derecha)
+'  FILA 2 — Frontera (izquierda)
 ' ─────────────────────────────────────────
 package "Frontera  —  Pantallas que ve el personal" as PKG_B {
-  boundary "Panel Historial\nde Actividad\n──────────────\nLista de todas las acciones\nregistradas en el sistema\nordenadas por fecha" as B1
-  boundary "Filtros de Consulta\n──────────────\nBusca por usuario,\ntipo de acción,\nmódulo o rango de fechas" as B2
-  boundary "Panel de Detalle\ndel Evento\n──────────────\nMuestra quién hizo qué,\ncuándo y en qué módulo\ncon información completa" as B3
+  boundary "Pantalla Registro\nde Lote\n──────────────\nSelector de laboratorio +\nbuscador de medicamento" as B1
+  boundary "Lista Desplegable\nde Sugerencias\n──────────────\nHasta 6 coincidencias\ndel inventario actual" as B2
+  boundary "Formulario de Datos\ndel Lote Físico\n──────────────\nLote · Vencimiento · Costos\nStock mínimo · Stock inicial · R.S." as B3
+  boundary "Confirmación\nde Registro\n──────────────\nAviso de éxito y retorno\nal listado de medicamentos" as B4
   B1 -[hidden]down-> B2
   B2 -[hidden]down-> B3
+  B3 -[hidden]down-> B4
 }
 
+' ─────────────────────────────────────────
+'  FILA 2 — Control (derecha)
+' ─────────────────────────────────────────
 package "Control  —  Procesos que ejecuta el sistema automáticamente" as PKG_C {
-  control "Cargador\nde Historial\n────────────\nRecupera los registros\nde actividad de la base\nde datos ordenados por fecha" as C1
-  control "Aplicador\nde Filtros\n────────────\nFiltrar y ordena los registros\nsegún los criterios definidos\npor el personal" as C2
+  control "Buscador por\nLaboratorio y Nombre\n────────────\nFiltra el inventario cargado\npor laboratorio y texto;\ndevuelve máximo 6 coincidencias" as C1
+  control "Registrador\nde Lote y Stock\n────────────\nSuma el stock inicial al existente,\nactualiza lote, vencimiento\ny precios del medicamento" as C2
+  control "Calculador\nde Estado\n────────────\nDetermina si el nuevo stock\ncoloca al medicamento en\nNormal, Bajo o Crítico" as C3
+  control "Registrador\nde Actividad\n────────────\nAnota quién registró el lote,\nfecha, hora y detalle\nen el historial del sistema" as C4
   C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+  C3 -[hidden]down-> C4
 }
 
 ' ─────────────────────────────────────────
@@ -89,38 +102,37 @@ PKG_E -[hidden]down-> PKG_B
 PKG_B -[hidden]right-> PKG_C
 
 ' ─────────────────────────────────────────
-'  FLUJO — sin cruces de líneas
+'  FLUJO — Registrar lote de medicamento existente
 ' ─────────────────────────────────────────
-ACTOR --> B1 : 1. Accede al módulo\n"Historial de Actividad"
+ACTOR --> B1  : 1. Abre pantalla\nNuevo Medicamento
 
-B1   --> C1  : 2. Solicita cargar\ntodos los registros
+B1    --> E2  : 2. Carga lista\nde laboratorios disponibles
+B1    --> E1  : 3. Carga inventario\ncompleto en pantalla
 
-C1   --> E1  : 3. Consulta el historial\nde actividad
+ACTOR --> B1  : 4. Selecciona laboratorio\nfabricante
+ACTOR --> B1  : 5. Escribe nombre\ndel medicamento
 
-C1   --> B1  : 4. Devuelve registros\nordenados por fecha y hora
+B1    --> C1  : 6. Filtra por laboratorio\ny texto ingresado
+C1    --> E1  : 7. Busca coincidencias\nen el inventario actual
+C1    --> B2  : 8. Devuelve hasta\n6 sugerencias
+B2    --> ACTOR : 9. El personal elige\nuna opción del listado
 
-B1   --> ACTOR : 5. El personal ve la lista\nde todas las acciones\nregistradas en el sistema
+B1    --> B3  : 10. Autocompleta nombre,\nlaboratorio y categoría\n(solo lectura)
+ACTOR --> B3  : 11. Completa los datos\ndel lote físico
+ACTOR --> B3  : 12. Pulsa "Registrar lote"
 
-ACTOR --> B2 : 6. Ingresa criterios\nde búsqueda: usuario,\nfecha o tipo de acción
+B3    --> C2  : 13. Envía id del medicamento\ny datos del lote
 
-B2   --> C2  : 7. Envía los filtros\nal sistema
+C2    --> B4  : 14a. Datos inválidos:\nmuestra aviso de corrección
+B4    --> ACTOR : el personal corrige
 
-C2   --> E1  : 8. Consulta el historial\naplicando los filtros activos
+C2    --> E1  : 14b. Actualiza stock,\nlote, vencimiento y precios
+C2    --> C3  : 15. Recalcula el estado\nNormal / Bajo / Crítico
+C3    --> E1  : 16. Persiste el nuevo\nestado en el inventario
+C2    --> C4  : 17. Notifica el registro\ndel lote
+C4    --> E3  : 18. Guarda en el historial:\nusuario, fecha y detalle
 
-C2   --> B1  : 9a. Devuelve registros\nque coinciden con los filtros
-B1   --> ACTOR : muestra la lista\nfiltrada y actualizada
-
-C2   --> B3  : 9b. Sin resultados\npara esos filtros
-B3   --> ACTOR : muestra aviso:\n"sin registros encontrados"
-
-ACTOR --> B1  : 10. Hace clic en\nuna fila del historial
-
-B1   --> C1  : 11. Solicita el detalle\ncompleto del evento
-
-C1   --> E1  : 12. Recupera la\ninformación completa\ndel registro seleccionado
-
-C1   --> B3  : 13. Envía el detalle\npara mostrarlo
-
-B3   --> ACTOR : 14. El personal ve quién\nhizo qué, en qué módulo\ny a qué hora exacta
+C2    --> B4  : 19. Lote registrado\ncorrectamente
+B4    --> ACTOR : 20. Confirmación de éxito\ny retorno al listado
 
 @enduml

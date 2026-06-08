@@ -30,4 +30,12 @@ async function getHistorial() {
   return rows;
 }
 
-module.exports = { getResumen, getPorCategoria, getHistorial };
+async function registrarAccion(usuario, accion, modulo, detalle) {
+  const fecha = new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' });
+  await pool.execute(
+    'INSERT INTO historial_acciones (fecha, usuario, accion, modulo, detalle) VALUES (?,?,?,?,?)',
+    [fecha, usuario, accion, modulo, detalle]
+  );
+}
+
+module.exports = { getResumen, getPorCategoria, getHistorial, registrarAccion };

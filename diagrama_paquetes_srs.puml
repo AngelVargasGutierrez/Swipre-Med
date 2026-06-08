@@ -1,0 +1,111 @@
+@startuml MOPGIMED Diagrama de Paquetes SRS
+
+top to bottom direction
+
+title "MOPGIMED — Diagrama de Paquetes\nEspecificación de Requerimientos (SRS)"
+
+skinparam {
+  backgroundColor        #FFFFFF
+  shadowing              false
+  defaultFontName        Segoe UI
+  defaultFontSize        10
+  defaultFontColor       #1E293B
+  PackageBackgroundColor #FFF5F5
+  PackageBorderColor     #B91C1C
+  PackageBorderThickness 2
+  PackageFontSize        11
+  PackageFontStyle       Bold
+  PackageFontColor       #7F1D1D
+  ComponentBackgroundColor #FFFFFF
+  ComponentBorderColor   #FECACA
+  ComponentFontSize      10
+  ComponentFontColor     #374151
+  ArrowColor             #B91C1C
+  ArrowThickness         1.5
+  ArrowFontSize          9
+  ArrowFontColor         #64748B
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 1 — Acceso al Sistema
+' ════════════════════════════════════════════════════════
+package "Acceso al Sistema" as P1 {
+  [UC-001: Iniciar Sesión]
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 2 — Administración de Usuarios
+' ════════════════════════════════════════════════════════
+package "Administración de Usuarios" as P2 {
+  [UC-002: Gestionar Usuarios y Asignar Rol]
+  [UC-011: Visualizar Historial de Acciones]
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 3 — Gestión de Medicamentos
+' ════════════════════════════════════════════════════════
+package "Gestión de Medicamentos" as P3 {
+  [UC-003: Gestión de Medicamentos - CRUD]
+  [UC-004: Búsqueda y Filtrado de Medicamentos]
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 4 — Control de Inventario
+' ════════════════════════════════════════════════════════
+package "Control de Inventario" as P4 {
+  [UC-005: Control de Inventario]
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 5 — Alertas y Notificaciones
+' ════════════════════════════════════════════════════════
+package "Alertas y Notificaciones" as P5 {
+  [UC-006: Gestión de Notificaciones]
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 6 — Reportes
+' ════════════════════════════════════════════════════════
+package "Reportes" as P6 {
+  [UC-007: Reporte General de Medicamentos]
+  [UC-008: Reporte de Ingresos y Salidas]
+  [UC-009: Reporte de Rotación de Medicamentos]
+}
+
+' ════════════════════════════════════════════════════════
+'  PAQUETE 7 — Dashboard Analítico
+' ════════════════════════════════════════════════════════
+package "Dashboard Analítico" as P7 {
+  [UC-010: Dashboard Analítico]
+}
+
+' ════════════════════════════════════════════════════════
+'  DEPENDENCIAS ENTRE PAQUETES
+' ════════════════════════════════════════════════════════
+
+' El acceso al sistema es prerequisito de todo lo demás
+P1 ..> P2 : autoriza acceso\nal Administrador
+P1 ..> P3 : autoriza acceso\na Farmacia y Admin
+P1 ..> P4 : autoriza acceso\na Jefatura, Admin y Farmacia
+P1 ..> P5 : autoriza acceso\na todos los roles
+P1 ..> P6 : autoriza acceso\na Jefatura y Admin
+P1 ..> P7 : autoriza acceso\na Jefatura y Admin
+
+' La gestión de medicamentos alimenta al inventario y notificaciones
+P3 ..> P4 : stock de medicamentos\nalimenta el inventario
+P3 ..> P5 : cambios de stock\ngeneran notificaciones
+P4 ..> P5 : alertas de stock bajo\ny vencimientos próximos
+
+' El inventario y medicamentos alimentan los reportes
+P3 ..> P6 : datos de medicamentos\npara reportes
+P4 ..> P6 : movimientos de inventario\npara reportes de ingresos
+
+' Los reportes y el inventario alimentan el dashboard
+P4 ..> P7 : indicadores de stock\npara el dashboard
+P6 ..> P7 : datos agregados\npara análisis inteligente
+
+' La administración registra acciones de todos los módulos
+P2 ..> P3 : historial de acciones\nsobre medicamentos
+P2 ..> P4 : historial de acciones\nsobre inventario
+
+@enduml

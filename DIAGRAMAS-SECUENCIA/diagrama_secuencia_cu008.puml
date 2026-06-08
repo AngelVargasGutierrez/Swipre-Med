@@ -1,0 +1,86 @@
+@startuml Secuencia CU008 MOPGIMED
+
+title "Diagrama de Secuencia — CU008: Filtrar Listado de Medicamentos (RF-008)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Logística / Jefatura" as ACTOR
+
+box "Frontera — Pantallas que ve el personal" #EFF6FF
+  participant "Lista Desplegable\nde Laboratorios" as B1
+  participant "Tabla de Medicamentos\nen Pantalla" as B2
+  participant "Contador de Medicamentos\nen Pantalla" as B3
+end box
+
+box "Control — Procesos internos del sistema" #FFFBEB
+  participant "Actualizador del Filtro" as C1
+  participant "Filtro Cruzado Inteligente" as C2
+end box
+
+box "Entidad — Información guardada" #ECFDF5
+  participant "Laboratorio Seleccionado" as E1
+  participant "Lista de Medicamentos\nCompleta en Memoria" as E2
+end box
+
+== 1. Carga de Laboratorios en el Filtro ==
+note over B1: Se extraen los laboratorios únicos de las fichas de medicamentos
+C1 -> E2 : Solicita marcas o laboratorios registrados en inventario
+E2 --> C1 : Devuelve laboratorios fabricantes encontrados
+C1 -> B1 : Rellena la lista desplegable dinámicamente con las opciones
+B1 --> ACTOR : El personal ve la lista desplegable ordenada y lista para filtrar
+
+== 2. Selección del Filtro ==
+ACTOR -> B1 : Abre la lista desplegable y selecciona un laboratorio (ej. "Pfizer")
+B1 -> C1 : Comunica la selección del usuario
+C1 -> E1 : Guarda la elección en la memoria bajo el filtro de laboratorio
+E1 --> C2 : Notifica el cambio de filtro y activa el cálculo de la vista
+
+== 3. Filtrado Cruzado y Actualización ==
+E2 --> C2 : Obtiene la lista completa de medicamentos
+C2 -> C2 : Filtra asegurando coincidencia doble:\n- Laboratorio coincide con el seleccionado ("Pfizer")\n- Nombre coincide con el texto escrito en el buscador
+C2 -> B2 : Muestra la nueva tabla de resultados en pantalla
+B2 --> ACTOR : El personal ve solo los medicamentos que cumplen con los dos filtros
+C2 -> B3 : Recalcula la cantidad de registros en pantalla
+B3 --> ACTOR : Se actualiza la etiqueta: "Mostrando X de Y medicamentos"
+
+== 4. Quitar Filtro (Flujo Alternativo) ==
+ACTOR -> B1 : Abre la lista desplegable y elige "Todos los laboratorios"
+B1 -> C1 : Comunica que se restableció el selector
+C1 -> E1 : Borra el laboratorio guardado en la memoria (lo deja vacío)
+E1 --> C2 : Notifica que no hay ningún laboratorio seleccionado
+E2 --> C2 : Obtiene la lista completa de medicamentos
+C2 -> B2 : Muestra todos los medicamentos de nuevo (si la barra de búsqueda está vacía)
+B2 --> ACTOR : El personal visualiza nuevamente la lista completa del inventario
+
+@enduml

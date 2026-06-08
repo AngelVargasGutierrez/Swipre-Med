@@ -1,0 +1,82 @@
+@startuml Secuencia CU007 MOPGIMED
+
+title "Diagrama de Secuencia — CU007: Listar Medicamentos (Buscador + Exportar Excel) (RF-007)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Logística / Jefatura" as ACTOR
+
+box "Frontera — Pantallas que ve el personal" #EFF6FF
+  participant "Barra de Herramientas\ny Botón de Exportar" as B1
+  participant "Contador de Medicamentos\nen Pantalla" as B2
+  participant "Archivo Excel Descargado" as B3
+end box
+
+box "Control — Procesos internos del sistema" #FFFBEB
+  participant "Preparador de Datos Excel" as C1
+  participant "Convertidor de Formatos\n(Librería XLSX)" as C2
+end box
+
+box "Entidad — Información guardada" #ECFDF5
+  participant "Lista de Medicamentos\nFiltrados en Memoria" as E1
+end box
+
+== 1. Visualización y Contador Dinámico ==
+note over B2: Se actualiza en tiempo real al aplicar filtros
+B1 -> E1 : Consulta cuántos medicamentos están visibles en pantalla
+E1 --> B2 : Devuelve la cantidad exacta de registros en pantalla
+B2 --> ACTOR : Renderiza etiqueta: "Mostrando X de Y medicamentos"
+B1 --> ACTOR : Habilita y muestra el botón "Exportar a Excel" (si X > 0)
+
+== 2. Preparación de la Exportación ==
+ACTOR -> B1 : Hace clic en el botón "Exportar a Excel"
+B1 -> C1 : Activa la función para exportar
+C1 -> E1 : Lee los datos de la lista filtrada actual
+E1 --> C1 : Devuelve la información estructurada de los medicamentos
+C1 -> C1 : Mapea atributos a formato tabla (Nombre, Categoría, Lote, Stock, etc.)\ny agrega formato visual legible (ej. S/ 0.00)
+
+== 3. Creación y Descarga del Documento Excel ==
+C1 -> C2 : Transforma los datos formateados a una cuadrícula de hoja de cálculo
+activate C2 #BBF7D0
+C2 --> C1 : Devuelve la hoja de cálculo generada
+C1 -> C2 : Crea un libro de trabajo de Excel vacío
+C2 --> C1 : Devuelve el libro de trabajo nuevo
+C1 -> C1 : Mide el largo de los textos y auto-ajusta el ancho de las columnas
+C1 -> C2 : Adjunta la hoja de cálculo al libro con el nombre "Inventario"
+C1 -> C2 : Solicita generar y guardar el archivo físico "inventario_mopgimed_completo.xlsx"
+C2 -> B3 : Envía el archivo generado al navegador
+deactivate C2
+B3 -> ACTOR : El navegador inicia la descarga del archivo Excel en la PC del usuario
+
+@enduml

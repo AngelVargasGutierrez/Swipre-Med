@@ -87,4 +87,34 @@ async function getCategorias() {
   return rows.map(r => r.categoria);
 }
 
-module.exports = { findAll, findById, create, update, remove, getLaboratorios, getCategorias };
+async function registrarLote(id, data) {
+  const { lote, costoUnit, precioVenta, stockMin, stockInicial, vencimiento, rSanitario } = data;
+  const existing = await findById(id);
+  if (!existing) throw new Error('Medicamento no encontrado');
+
+  const newStock  = (parseInt(existing.stock) || 0) + (parseInt(stockInicial) || 0);
+  const minNum    = parseInt(stockMin) || parseInt(existing.stockMin) || 0;
+  const estado    = calcEstado(newStock, minNum);
+  const vencDB    = vencimiento ? vencimiento.split('/').reverse().join('-') : null;
+
+  await pool.execute(
+    `UPDATE medicamentos
+       SET lote=?, stock=?, stock_min=?, costo_unit=?, precio_venta=?,
+           vencimiento=?, r_sanitario=?, estado=?
+     WHERE id=?`,
+    [
+      lote || existing.lote,
+      newStock,
+      minNum,
+      costoUnit  !== undefined ? costoUnit  : existing.costoUnit,
+      precioVenta !== undefined ? precioVenta : existing.precioVenta,
+      vencDB,
+      rSanitario || existing.rSanitario,
+      estado,
+      id,
+    ]
+  );
+  return findById(id);
+}
+
+module.exports = { findAll, findById, create, update, remove, getLaboratorios, getCategorias, registrarLote };

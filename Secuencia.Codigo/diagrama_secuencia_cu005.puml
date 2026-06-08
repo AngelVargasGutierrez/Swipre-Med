@@ -1,0 +1,148 @@
+@startuml CU005_RegistrarMedicamentoIA_Codigo
+
+title "CU005 — Registrar Medicamento Nuevo con Asistencia IA (RF-005) · fiel al código\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Personal del Hospital" as ACTOR
+
+box "Frontend — React" #EFF6FF
+  participant "Medicamentos.jsx" as MED
+  participant "api.js" as API
+end box
+
+box "Backend — Express" #FFFBEB
+  participant "medicamentos.js\n(routes)" as ROUTES
+  participant "medicamentoController.js" as CTRL
+  participant "geminiService.js" as GEMINI
+  participant "catalogoFallback.js" as FALLBACK
+  participant "medicamentoModel.js" as MODEL
+  participant "reporteModel.js" as REPORTE
+end box
+
+database "MySQL" as DB
+
+' ── Montaje inicial ──
+ACTOR -> MED : navega a Gestión de Medicamentos
+MED -> API : getMedicamentos()
+API -> ROUTES : GET /api/medicamentos
+ROUTES -> CTRL : getAll()
+CTRL -> MODEL : findAll()
+MODEL -> DB : SELECT * FROM medicamentos\nORDER BY nombre
+DB --> MODEL : filas
+MODEL --> CTRL : inventario[]
+CTRL --> API : JSON 200
+API --> MED : setMedicamentos(data)\nrecargar()
+
+' ── Fase 1: búsqueda local (debounce 350ms) ──
+ACTOR -> MED : onChange(search)\nsetDropdownOpen(true)
+MED -> MED : useEffect → cargarVariantes(\nsearch, labFilter, medicamentos)
+MED -> MED : variantesDesdeMedicamentos(meds, texto, lab)
+MED -> MED : laboratoriosDesdeMedicamentos(meds, texto)
+MED -> MED : setVariantes(locales)\nsetLabsBusqueda(labsLocal)\nsetMotorIA('base-de-datos')
+MED --> ACTOR : render ia-combobox-panel\ncon opciones locales
+
+' ── Fase 2: variantes servidor + IA ──
+MED -> API : getVariantesIA(texto, lab)\n{ timeoutMs: 12000 }
+API -> ROUTES : GET /api/medicamentos/variantes-ia?q=&laboratorio=
+ROUTES -> CTRL : getVariantesIA(req, res)
+
+CTRL -> MODEL : findAll()
+MODEL -> DB : SELECT * FROM medicamentos
+DB --> MODEL : inventario[]
+CTRL -> CTRL : laboratoriosDeBusqueda(inventario, base)
+CTRL -> CTRL : variantesDesdeInventario(inventario, base, lab)
+CTRL -> FALLBACK : buscarVariantes(base, 12)
+
+alt geminiService.generarVariantesFarmaceuticas(base) OK
+  CTRL -> GEMINI : generarVariantesFarmaceuticas(base)
+  GEMINI -> GEMINI : fetchGemini() → Gemini API
+  GEMINI --> CTRL : geminiList[]
+else catch error Gemini
+  CTRL -> CTRL : geminiList = []\nconsole.error('[Gemini variantes-ia]')
+end
+
+CTRL -> CTRL : combinarVariantes(geminiList, fallbackList, inventario, base)
+CTRL -> CTRL : filtrarVariantesPorLaboratorio(variantes, lab)
+CTRL -> CTRL : fusionarVariantes(desdeBD, variantes, 12)
+CTRL --> API : res.json({ variantes, laboratorios, motor, totalBD })
+API --> MED : data
+
+MED -> MED : fusionarVariantes(locales, remotas, 12)
+MED -> MED : setVariantes(fusionadas)\nsetLabsBusqueda(...)\nsetMotorIA(data.motor)
+MED --> ACTOR : actualiza ia-combobox-list\n(ia-tag-inventario | ia-tag-sugerencia)
+
+opt setLabFilter(e.target.value)
+  ACTOR -> MED : onChange ia-lab-filter
+  MED -> MED : setLabFilter(lab)\nre-dispara cargarVariantes()
+end
+
+' ── Fase 3: selección y formulario ──
+ACTOR -> MED : onClick ia-combobox-option\no Enter → elegirVariante(v)
+MED -> MED : setSeleccion(v)\nsetForm({ nombre, laboratorio, ... })\nsetDropdownOpen(false)
+MED --> ACTOR : render ia-registro-panel\nia-selection-chip
+
+ACTOR -> MED : submit → registrarMedicamento(e)
+
+alt seleccion.medicamentoId existe (lote en inventario existente)
+  MED -> API : registrarLote(medicamentoId, payload)
+  API -> ROUTES : POST /api/medicamentos/lote/:id
+  ROUTES -> CTRL : registrarLote(req, res)
+  CTRL -> MODEL : registrarLote(id, loteData)
+  MODEL -> MODEL : findById(id)\nnewStock = existing.stock + stockInicial\ncalcEstado(newStock, stockMin)
+  MODEL -> DB : UPDATE medicamentos SET\nlote, stock, stock_min, estado...\nWHERE id=?
+  DB --> MODEL : ok
+  MODEL --> CTRL : medicamento actualizado
+  CTRL -> REPORTE : registrarAccion(\n  usuario, 'Registró nuevo lote',\n  'Medicamentos', detalle\n)
+  REPORTE -> DB : INSERT INTO historial_acciones
+  CTRL --> API : res.json(actualizado)
+  API --> MED : setMsgOk('Lote registrado...')
+
+else medicamentoId == null (medicamento nuevo en el sistema)
+  MED -> API : createMedicamento({\n  codigo: `FARM-${Date.now()}`,\n  ...payload\n})
+  API -> ROUTES : POST /api/medicamentos
+  ROUTES -> CTRL : create(req, res)
+  CTRL -> MODEL : create(data)
+  MODEL -> MODEL : calcEstado(stockNum, minNum)
+  MODEL -> DB : INSERT INTO medicamentos\n(codigo, nombre, laboratorio, lote,\nstock, stock_min, costo_unit,\nprecio_venta, vencimiento,\nr_sanitario, estado, categoria)
+  DB --> MODEL : insertId
+  MODEL --> CTRL : findById(insertId)
+  CTRL --> API : res.status(201).json(nuevo)
+  API --> MED : setMsgOk('Medicamento registrado...')
+end
+
+MED -> MED : recargar()\nlimpiarSeleccion()\nsetSearch('')\nsetLabFilter('')
+MED --> ACTOR : formulario limpio\nlisto para nueva búsqueda
+
+@enduml

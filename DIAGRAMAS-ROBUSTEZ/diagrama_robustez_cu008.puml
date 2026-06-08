@@ -1,0 +1,109 @@
+@startuml Robustez - CU008 Filtrar Laboratorio MOPGIMED
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU008: Filtrar Listado de Medicamentos (RF-008)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+' ─────────────────────────────────────────
+'  ACTOR
+' ─────────────────────────────────────────
+actor "Logística / Jefatura" as ACTOR
+
+' ─────────────────────────────────────────
+'  FILA 1 — Entidades
+' ─────────────────────────────────────────
+package "Entidad — Información guardada en el sistema" as PKG_E {
+  entity "Lista de Medicamentos\nCompleta en Memoria\n──────────────────────\nTodos los registros del inventario\ncargados en la memoria rápida" as E2
+  entity "Laboratorio Seleccionado\n──────────────────────\nLa marca o laboratorio específico que\nel usuario eligió en el desplegable" as E1
+  E2 -[hidden]right-> E1
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera
+' ─────────────────────────────────────────
+package "Frontera — Pantallas que ve el personal" as PKG_B {
+  boundary "Lista Desplegable\nde Laboratorios\n──────────────\nSelector desplegable para acotar\npor la marca o laboratorio" as B1
+  boundary "Tabla de Medicamentos\nen Pantalla\n──────────────\nTabla reactiva que muestra solo\nlos medicamentos coincidentes" as B2
+  boundary "Contador de Medicamentos\nen Pantalla\n──────────────\nMuestra la cantidad visible actual\n(ej. Mostrando X de Y)" as B3
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Control
+' ─────────────────────────────────────────
+package "Control — Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Actualizador del Filtro\n──────────────\nGuarda el laboratorio elegido\ny notifica el cambio de estado" as C1
+  control "Filtro Cruzado Inteligente\n──────────────\nCruza filtros: marca seleccionada\ny palabra escrita en el buscador" as C2
+  C1 -[hidden]down-> C2
+}
+
+' ─────────────────────────────────────────
+'  Posicionamiento
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+' ─────────────────────────────────────────
+'  FLUJO
+' ─────────────────────────────────────────
+
+ACTOR --> B1 : 1. Abre el desplegable y selecciona un\nlaboratorio fabricante (ej. "Pfizer")
+B1    --> C1 : 2. Comunica la selección del usuario
+C1    --> E1 : 3. Guarda el laboratorio en la memoria del filtro
+E1    --> C2 : 4. Notifica el cambio y activa el cálculo de la vista
+E2    --> C2 : 5. Lee medicamentos completos de la memoria
+C2    --> C2 : 6. Realiza el filtro cruzado (marca y barra de búsqueda)
+C2    --> B2 : 7. Actualiza la tabla mostrando solo las coincidencias
+C2    --> B3 : 8. Actualiza el contador dinámico en pantalla
+
+@enduml

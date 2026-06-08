@@ -1,0 +1,72 @@
+@startuml Secuencia_CU006_Codigo_MOPGIMED
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    11
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      10
+  ParticipantPadding 20
+  BoxPadding         10
+}
+
+title "Diagrama de Secuencia — CU006 (fiel al código)\nConsultar Medicamento (Disponibilidad y Precio) · RF-006 · MOPGIMED"
+
+' ═══════════════════════════════════════════
+' PARTICIPANTES
+' ═══════════════════════════════════════════
+actor "Caja Farmacia\n/ Técnico" as ACTOR #FFF1F2
+
+box "Frontend React" #F8FAFC
+  participant "Medicamentos.jsx" as MED #EFF6FF
+  participant "Estado Local\n(medicamentos / search)" as STATE #EFF6FF
+  participant "ModalDetalleMedicamento.jsx" as MODAL #EFF6FF
+end box
+
+' ═══════════════════════════════════════════
+' INICIO DE SECUENCIA
+' ═══════════════════════════════════════════
+autonumber
+
+== 1. Carga Inicial de Datos ==
+note over MED: Al montar el componente, se llama a recargar() que obtiene todos los medicamentos
+MED -> STATE : setMedicamentos(data)
+STATE --> MED : Estado actualizado
+
+== 2. Filtrado en Tiempo Real ==
+ACTOR -> MED : Ingresa texto en barra de búsqueda
+MED -> STATE : setSearch(valorInput)
+STATE --> MED : Dispara re-renderizado
+MED -> MED : medicamentos.filter(m => coincideMedicamento(m, search))
+MED -> ACTOR : Muestra tabla actualizada con resultados (medicamentosFiltrados)
+
+== 3. Consulta de Detalles y Precio ==
+ACTOR -> MED : Clic en botón (👁) de un registro
+MED -> STATE : setMedicamentoDetalle(medicamentoSeleccionado)
+STATE --> MED : Dispara re-renderizado
+MED -> MODAL : Renderiza componente <ModalDetalleMedicamento>
+activate MODAL #E0F2FE
+
+MODAL -> MODAL : Evalúa reglas de UI (Semáforo de stock)
+alt isCritico (stock == 0)
+    MODAL -> MODAL : Configura colores rojos y mensaje de alerta
+else isBajo (stock > 0 y stock <= stockMin)
+    MODAL -> MODAL : Configura colores amarillos
+else Normal
+    MODAL -> MODAL : Configura colores verdes
+end
+
+MODAL -> ACTOR : Despliega modal mostrando Precio Venta al Público y detalles
+
+== 4. Cierre del Modal ==
+ACTOR -> MODAL : Clic en botón "Cerrar" o en el aspa (X)
+MODAL -> MED : onClose()
+deactivate MODAL
+
+MED -> STATE : setMedicamentoDetalle(null)
+STATE --> MED : Oculta el Modal y regresa a la tabla principal
+
+@enduml

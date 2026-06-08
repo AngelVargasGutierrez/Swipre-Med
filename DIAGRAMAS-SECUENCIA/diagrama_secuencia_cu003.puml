@@ -1,6 +1,6 @@
 @startuml Secuencia CU003 MOPGIMED
 
-title "Diagrama de Secuencia — CU003: Buscar Medicamento con IA\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+title "Diagrama de Secuencia — CU003: Visualizar Historial de Acciones (RF-003)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
 
 autonumber
 
@@ -35,63 +35,53 @@ skinparam box {
   FontSize 11
 }
 
-actor "Personal Autorizado\n(Farmacia / Jefatura)" as ACTOR
+actor "Administrador\ndel Sistema" as ACTOR
 
-box "Frontera — Pantallas que ve el personal" #EFF6FF
-  participant "Buscador Inteligente\nde Medicamentos" as B1
-  participant "Aviso: Sin\nResultados" as B3
-  participant "Panel de Resultados\ncon Analisis IA" as B2
+box "Frontera — Pantallas que ve el Administrador" #EFF6FF
+  participant "Pantalla de\nGestion de Usuarios" as B1
+  participant "Tabla del\nHistorial de Acciones" as B2
 end box
 
 box "Control — Procesos internos del sistema" #FFFBEB
-  participant "Motor de Busqueda\nInteligente" as C1
-  participant "Analizador de\nTendencias y Demanda" as C2
-  participant "Generador de Alertas\ny Recomendaciones" as C3
+  participant "Consultor\nde Historial" as C1
 end box
 
 box "Entidad — Informacion guardada" #ECFDF5
-  participant "Fichas de\nMedicamentos" as E1
-  participant "Historial de\nMovimientos y Consumo" as E2
-  participant "Proyecciones y\nAlertas de la IA" as E3
+  participant "Registro\nde Usuarios" as E1
+  participant "Historial\nde Actividad" as E2
 end box
 
-ACTOR -> B1 : Ingresa nombre, categoria\no laboratorio a buscar
-B1 -> C1 : Envia el texto\nde busqueda
-C1 -> E1 : Busca en las fichas\nde medicamentos
-E1 --> C1 : Devuelve los medicamentos\nque coinciden
+== Cargar el historial al abrir el modulo ==
 
-alt No se encontraron medicamentos
-  C1 -> B3 : No hay resultados\npara esa busqueda
-  B3 --> ACTOR : Muestra el aviso,\nel personal intenta con otro termino
+ACTOR -> B1 : Accede al modulo\n"Gestion de Usuarios"\ndesde el menu lateral
+B1 -> C1 : Solicita la lista de usuarios\ny el historial de acciones
+C1 -> E1 : Consulta todos\nlos usuarios del sistema
+E1 --> C1 : Devuelve lista de usuarios\ncon nombre, rol y estado
+C1 -> E2 : Consulta los ultimos\n20 registros de actividad
+E2 --> C1 : Devuelve acciones ordenadas\nde mas reciente a mas antigua
+C1 --> B1 : Entrega usuarios\ne historial juntos
+B1 --> B2 : Muestra la tabla\ndel historial en la pagina
+B2 --> ACTOR : El Administrador ve cada fila:\nfecha, usuario, accion,\nmodulo y detalle
 
-else Se encontraron medicamentos
-  note over C1, C2 : El sistema activa la Inteligencia\nArtificial para enriquecer los resultados
-  C1 -> C2 : Pasa los medicamentos encontrados\npara analizar su comportamiento
-  C2 -> E2 : Estudia el historial de consumo\ny movimientos de cada medicamento
-  E2 --> C2 : Devuelve tendencias y datos\nde consumo por periodo
+note right of ACTOR
+  Cada fila del historial muestra:
+  - Fecha y hora exacta
+  - Nombre del usuario
+  - Tipo de accion realizada
+  - Modulo del sistema
+  - Detalle del evento
+end note
 
-  note over C2 : La IA calcula tendencia de consumo,\nprediccion de demanda futura\ny dias estimados de stock restante
+== El sistema registra acciones automaticamente ==
 
-  C2 -> C3 : Entrega el analisis para\ngenerar alertas y recomendaciones
-  C3 -> E3 : Guarda las proyecciones\ny alertas calculadas
-  E3 --> C3 : Confirma que las predicciones\nquedaron guardadas
+note over C1, E2 : Cada vez que un usuario inicia sesion,\ncrea, edita o cambia el estado de\nuna cuenta, el sistema anota la\naccion automaticamente en el historial
 
-  group Presentacion de resultados al personal
-    C2 -> B2 : Envia resultados\ncon indicadores IA
-    B2 --> ACTOR : Muestra medicamentos con\ntendencia y dias de stock
+alt No hay registros en el historial
+  C1 --> B2 : Lista vacia
+  B2 --> ACTOR : Muestra el mensaje:\n"Aun no hay acciones registradas"
 
-    note right of ACTOR
-      El personal puede ver:
-      - Stock actual y estado
-      - Tendencia de consumo
-      - Prediccion de demanda
-      - Dias estimados de stock
-      - Alertas de reabastecimiento
-    end note
-
-    C3 -> B2 : Agrega alertas y\nrecomendaciones automaticas
-    B2 --> ACTOR : El personal ve las sugerencias:\nque pedir y cuando hacerlo
-  end
+else Historial con registros disponibles
+  B2 --> ACTOR : El Administrador puede revisar\ncada evento: quien hizo que,\nen que modulo y en que momento
 end
 
 @enduml

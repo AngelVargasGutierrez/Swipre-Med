@@ -1,0 +1,58 @@
+@startuml Secuencia_CU010_Analisis
+title "Diagrama de Secuencia — CU010 (Análisis / Lenguaje Natural)\nVisualizar Semáforo de Stock · RF-010 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+actor "Logística / Jefatura" as Actor
+boundary "Vista de Control de Stock" as Vista
+control "Gestor de Inventario" as Gestor
+entity "Datos de Inventario" as Datos
+
+Actor -> Vista : Abre el módulo de control de stock
+Vista -> Gestor : Solicita información de stock actual
+Gestor -> Datos : Consulta niveles disponibles
+Datos --> Gestor : Retorna información
+Gestor -> Gestor : Compara cantidades contra los mínimos
+Gestor -> Gestor : Clasifica en Normal, Bajo o Crítico
+Gestor -> Vista : Envía el listado clasificado
+Vista --> Actor : Despliega indicadores de semáforo
+@enduml

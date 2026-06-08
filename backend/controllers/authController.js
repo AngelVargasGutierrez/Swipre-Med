@@ -1,10 +1,13 @@
-const userModel = require('../models/userModel');
+const userModel    = require('../models/userModel');
+const { registrarAccion } = require('../models/reporteModel');
 
 async function login(req, res) {
   const { username, password } = req.body;
   try {
     const user = await userModel.findByCredentials(username, password);
     if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
+
+    await registrarAccion(user.name, 'Inició sesión', 'Acceso', user.role_label).catch(() => {});
 
     res.json({
       id:        user.id,

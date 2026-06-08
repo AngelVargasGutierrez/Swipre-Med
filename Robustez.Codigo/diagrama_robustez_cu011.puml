@@ -1,0 +1,86 @@
+@startuml Robustez_CU011_Codigo_MOPGIMED
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU011: Visualizar Semáforo de Vencimientos (RF-011)\nMOPGIMED · Fiel al Código"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+actor "Usuario\n(Logística / Jefatura)" as ACTOR
+
+package "Entidad — Base de Datos (MySQL)" as PKG_E {
+  entity "medicamentos (Tabla)\n──────────────────────\nColumna física 'vencimiento'" as E1
+  entity "ControlInventario.jsx\n──────────────────────\nVariable TODAY (new Date() en JS)" as E2
+  E1 -[hidden]right-> E2
+}
+
+package "Frontera — Frontend (React)" as PKG_B {
+  boundary "Stat Card (Naranja)\n──────────────\nMuestra count de 'Por Vencer'\n(< 90 días)" as B1
+  boundary "Tabla Principal\n──────────────\nBadge: Vencido (Gris), <=30d (Rojo),\n<=90d (Amarillo)" as B2
+  B1 -[hidden]down-> B2
+}
+
+package "Control — Backend y Frontend" as PKG_C {
+  control "inventarioModel.getTotales()\n──────────────\nSUM(CASE WHEN vencimiento <= 30 DAY...)" as C1
+  control "diasRestantes(vencimiento)\n──────────────\nLógica JS en ControlInventario.jsx" as C2
+  control "filter(m => diasRestantes <= 90)\n──────────────\nGenera el arreglo 'porVencer'" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+ACTOR --> B1  : 1. Navega a /inventario
+B1    --> C1  : 2. Backend cuenta vencimientos en MySQL\npara enviar 'totals.por_vencer'
+C1    --> E1  : 3. Evalúa columna 'vencimiento' en BD
+E1    --> C1  : 4. Retorna el conteo numérico
+C1    --> C2  : 5. Frontend extrae medicamentos devueltos
+C2    --> E2  : 6. Compara 'm.vencimiento' con TODAY
+C2    --> C3  : 7. Aplica Math.round() para obtener días
+C3    --> B1  : 8. Actualiza Tab y Tarjeta "Por Vencer"
+C3    --> B2  : 9. Condiciona el badge visual de la celda
+
+@enduml

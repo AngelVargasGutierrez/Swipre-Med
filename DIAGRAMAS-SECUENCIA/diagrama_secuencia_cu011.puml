@@ -1,0 +1,55 @@
+@startuml Secuencia_CU011_Analisis
+title "Diagrama de Secuencia — CU011 (Análisis / Lenguaje Natural)\nVisualizar Semáforo de Vencimientos"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+actor "Logística / Jefatura" as Actor
+boundary "Vista de Vencimientos" as Vista
+control "Gestor de Inventario" as Gestor
+entity "Fechas Registradas" as Datos
+
+Actor -> Vista : Solicita control de vencimientos
+Vista -> Gestor : Pide análisis temporal
+Gestor -> Datos : Obtiene lotes y fechas límite
+Datos --> Gestor : Retorna registros
+Gestor -> Gestor : Compara la fecha de hoy con la fecha límite
+Gestor -> Gestor : Calcula días restantes
+Gestor -> Gestor : Asigna criticidad (Vencido, Próximo, Vigente)
+Gestor -> Vista : Devuelve listado coloreado
+Vista --> Actor : Muestra alertas visuales y semáforo
+@enduml

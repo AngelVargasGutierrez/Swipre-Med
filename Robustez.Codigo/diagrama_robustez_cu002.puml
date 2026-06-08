@@ -1,0 +1,138 @@
+@startuml Robustez_CU002_Codigo_MOPGIMED
+
+left to right direction
+
+title "Diagrama de Robustez — CU002 (fiel al código)\nGestionar Usuarios y Asignar Rol · RF-002 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+}
+
+' ═══════════════════════════════════════════
+'  ACTOR
+' ═══════════════════════════════════════════
+actor "Administrador\ndel Sistema" as ACTOR
+
+' ═══════════════════════════════════════════
+'  FRONTERA — Usuarios.jsx (React)
+' ═══════════════════════════════════════════
+package "Frontera  —  Usuarios.jsx" as PKG_B {
+  boundary "B1 — tabla principal\ncargar() → api.getUsers()\nsetUsers · setHistorial\nbotón 'Nuevo Usuario'" as B1
+  boundary "B2 — modal crear/editar\nabrirCrear() · abrirEditar(u)\nform: username,password,role,name,email\nhandleGuardar(e)" as B2
+  boundary "B3 — error en modal\nsetError(err.message)\n{background:#fee2e2}" as B3
+  boundary "B4 — badge toggle\ntoggleEstado(id)\napi.toggleUserEstado(id, operador)" as B4
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+  B3 -[hidden]down-> B4
+}
+
+' ═══════════════════════════════════════════
+'  CONTROL — Backend Express
+' ═══════════════════════════════════════════
+package "Control  —  Backend Express" as PKG_C {
+  control "C1 — userController.js\ngetAll() · createUser()\nupdateUser() · toggleEstado()\nROLE_LABELS = {admin,farmacia,jefatura}" as C1
+  control "C2 — userModel.js\nfindByUsername() · create()\nupdate() · getEstado()\nupdateEstado() · findAll()" as C2
+  control "C3 — reporteModel.js\nregistrarAccion(\n  operador, accion,\n  'Usuarios', name\n)" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+' ═══════════════════════════════════════════
+'  ENTIDAD — MySQL
+' ═══════════════════════════════════════════
+package "Entidad  —  MySQL" as PKG_E {
+  entity "E1 — userModel.js\nMySQL tabla users\nid · username · password · role\nname · role_label · email · estado · created_at" as E1
+  entity "E2 — reporteModel.js\nMySQL historial_acciones\nfecha · usuario · accion\nmodulo · detalle" as E2
+  E1 -[hidden]down-> E2
+}
+
+' ═══════════════════════════════════════════
+'  POSICIONAMIENTO Actor | Frontera | Control | Entidad
+' ═══════════════════════════════════════════
+ACTOR -[hidden]right-> B1
+B1    -[hidden]right-> C1
+C1    -[hidden]right-> E1
+
+B2 -[hidden]right-> C2
+C2 -[hidden]right-> E1
+B3 -[hidden]right-> C1
+B4 -[hidden]right-> C3
+C3 -[hidden]right-> E2
+
+' ═══════════════════════════════════════════
+'  FLUJO
+' ═══════════════════════════════════════════
+
+' Carga inicial
+ACTOR --> B1 : 1. navega a\nGestión de Usuarios
+B1 --> C1 : 2. api.getUsers()\nGET /api/users
+C1 --> C2 : 3. Promise.all([\nfindAll(), getHistorial()\n])
+C2 --> E1 : 4. SELECT FROM users\nORDER BY id
+E1 --> B1 : 5. tabla de usuarios\ne historial visibles
+
+' Crear usuario
+ACTOR --> B2 : 6. abrirCrear()\nllena formulario
+B2 --> C1 : 7. api.createUser()\nPOST /api/users
+C1 --> C2 : 8. findByUsername()\nluego create()
+C2 --> E1 : 9. SELECT id WHERE username=?\nINSERT INTO users
+
+C1 --> B3 : 10a. 409 username duplicado\no 400 campos faltantes
+C1 --> C3 : 10b. registrarAccion\n'Creó usuario'
+C3 --> E2 : 11. INSERT historial_acciones
+C1 --> B1 : 12. cerrarModal() · cargar()
+
+' Editar usuario
+ACTOR --> B2 : 13. abrirEditar(u)\nmodifica campos
+B2 --> C1 : 14. api.updateUser(id)\nPUT /api/users/:id
+C1 --> C2 : 15. findByUsername() +\nupdate(id, datos)
+C2 --> E1 : 16. UPDATE users SET ...\nWHERE id=?
+C1 --> C3 : 17. registrarAccion\n'Actualizó usuario'
+C3 --> E2 : 18. INSERT historial_acciones
+
+' Toggle estado
+ACTOR --> B4 : 19. toggleEstado(id)
+B4 --> C1 : 20. PATCH /api/users/:id/toggle
+C1 --> C2 : 21. getEstado(id)\nupdateEstado(id, nuevo)
+C2 --> E1 : 22. SELECT estado · UPDATE estado
+C1 --> C3 : 23. registrarAccion\n'Activó/Desactivó usuario'
+C3 --> E2 : 24. INSERT historial_acciones
+C1 --> B4 : 25. { estado: nuevo }\nbadge actualizado en tabla
+
+@enduml

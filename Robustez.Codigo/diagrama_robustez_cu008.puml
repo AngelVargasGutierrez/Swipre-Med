@@ -1,0 +1,106 @@
+@startuml Robustez_CU008_Codigo_MOPGIMED
+
+left to right direction
+
+title "Diagrama de Robustez — CU008 (fiel al código)\nFiltrar Listado de Medicamentos · RF-008 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+}
+
+' ═══════════════════════════════════════════
+'  ACTOR
+' ═══════════════════════════════════════════
+actor "Usuario\n(Logística / Jefatura)" as ACTOR
+
+' ═══════════════════════════════════════════
+'  FRONTERA
+' ═══════════════════════════════════════════
+package "Frontera  —  Medicamentos.jsx" as PKG_B {
+  boundary "B1 — Tarjeta de Filtro\nSelector 'Filtrar por Laboratorio'\nonChange(e.target.value)" as B1
+  boundary "B2 — Tabla Principal Inventario\nListado Reactivo" as B2
+  boundary "B3 — Contador Dinámico\n'Mostrando X de Y medicamentos'" as B3
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+}
+
+' ═══════════════════════════════════════════
+'  CONTROL
+' ═══════════════════════════════════════════
+package "Control  —  Frontend" as PKG_C {
+  control "C1 — setFiltroLaboratorioPrincipal()\nActualiza estado reactivo" as C1
+  control "C2 — medicamentosFiltrados\nCombina search y filtroLaboratorioPrincipal" as C2
+  C1 -[hidden]down-> C2
+}
+
+' ═══════════════════════════════════════════
+'  ENTIDAD
+' ═══════════════════════════════════════════
+package "Entidad  —  Estado Local" as PKG_E {
+  entity "E1 — state: filtroLaboratorioPrincipal\nLaboratorio seleccionado" as E1
+  entity "E2 — state: medicamentos[]\nData completa en memoria" as E2
+  E1 -[hidden]down-> E2
+}
+
+' ═══════════════════════════════════════════
+'  POSICIONAMIENTO
+' ═══════════════════════════════════════════
+ACTOR -[hidden]right-> B1
+B1    -[hidden]right-> C1
+C1    -[hidden]right-> E1
+
+' ═══════════════════════════════════════════
+'  FLUJO 
+' ═══════════════════════════════════════════
+
+' Interacción de filtro
+ACTOR --> B1 : 1. Selecciona laboratorio\n(ej. "Pfizer")
+B1 --> C1 : 2. Dispara onChange()
+C1 --> E1 : 3. Actualiza el estado\nfiltroLaboratorioPrincipal
+E1 --> C2 : 4. Dispara re-renderizado
+
+' Lógica de filtrado
+E2 --> C2 : 5. Lee colección completa\nde medicamentos
+C2 --> C2 : 6. Filtra combinando coincidencia de texto\ny laboratorio seleccionado
+C2 --> B2 : 7. Actualiza la tabla principal\ncon medicamentosFiltrados
+C2 --> B3 : 8. Actualiza el contador dinámico
+
+@enduml

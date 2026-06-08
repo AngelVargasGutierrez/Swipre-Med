@@ -1,0 +1,193 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing true
+skinparam defaultFontName Arial
+
+' Estilos y colores para los Paquetes
+skinparam package {
+    BackgroundColor<<Controllers>> #F1F8E9
+    BorderColor<<Controllers>> #33691E
+    
+    BackgroundColor<<Models>> #E3F2FD
+    BorderColor<<Models>> #0D47A1
+    
+    BackgroundColor<<Services>> #FFF8E1
+    BorderColor<<Services>> #FF6F00
+    
+    BackgroundColor<<Data>> #FCE4EC
+    BorderColor<<Data>> #880E4F
+}
+
+' Estilos y colores para las Clases
+skinparam class {
+    BackgroundColor<<Controller>> #AED581
+    BorderColor<<Controller>> #33691E
+    ArrowColor #333333
+
+    BackgroundColor<<Model>> #90CAF9
+    BorderColor<<Model>> #0D47A1
+
+    BackgroundColor<<Service>> #FFD54F
+    BorderColor<<Service>> #FF6F00
+
+    BackgroundColor<<Data>> #F48FB1
+    BorderColor<<Data>> #880E4F
+}
+
+package "backend.controllers" <<Controllers>> {
+
+    class analyticsController << (C,#33691E) Controller >> {
+        + getAnalytics(req, res)
+    }
+
+    class authController << (C,#33691E) Controller >> {
+        + login(req, res)
+    }
+
+    class dashboardController << (C,#33691E) Controller >> {
+        + getDashboard(req, res)
+    }
+
+    class inventarioController << (C,#33691E) Controller >> {
+        + getInventario(req, res)
+    }
+
+    class medicamentoController << (C,#33691E) Controller >> {
+        - norm(s: String)
+        - filtrarInventario(medicamentos, query, sugerenciasIA)
+        - palabraBase(texto: String)
+        - coincideBusquedaMed(m, base)
+        - laboratoriosDeBusqueda(inventario, base)
+        - variantesDesdeInventario(inventario, base, lab)
+        - fusionarVariantes(primero, segundo, max)
+        - vincularVarianteConInventario(variante, inventario)
+        - combinarVariantes(geminiList, fallbackList, inventario, base)
+        - filtrarVariantesPorLaboratorio(variantes, lab)
+        + getAll(req, res)
+        + getOne(req, res)
+        + create(req, res)
+        + update(req, res)
+        + remove(req, res)
+        + getLaboratorios(req, res)
+        + getCategorias(req, res)
+        + getSugerenciasIA(req, res)
+        + getVariantesIA(req, res)
+        + buscarConIA(req, res)
+        + registrarLote(req, res)
+    }
+
+    class notificacionController << (C,#33691E) Controller >> {
+        + getAll(req, res)
+        + marcarLeida(req, res)
+        + marcarTodas(req, res)
+    }
+
+    class reporteController << (C,#33691E) Controller >> {
+        + getResumen(req, res)
+    }
+
+    class userController << (C,#33691E) Controller >> {
+        - ROLE_LABELS: Object
+        + createUser(req, res)
+        + updateUser(req, res)
+        + getAll(req, res)
+        + toggleEstado(req, res)
+    }
+
+}
+
+package "backend.models" <<Models>> {
+    class analyticsModel << (M,#0D47A1) Model >> {
+        + getPrediccionDemanda()
+        + getComparativaMensual()
+        + getTendencias()
+        + getPrediccionesCriticas()
+        + getValorPorCategoria()
+    }
+    class userModel << (M,#0D47A1) Model >> {
+        + ROLE_MENUS: Object
+        + findByCredentials(username, password)
+        + findAll()
+        + getEstado(id)
+        + updateEstado(id, nuevoEstado)
+        + create(data)
+        + update(id, data)
+        + findByUsername(username)
+    }
+    class dashboardModel << (M,#0D47A1) Model >> {
+        + getStats()
+        + getStockPorCategoria()
+        + getEstadoStock()
+        + getMovimientosSemana()
+        + getTop5Valor()
+        + getAlertas()
+    }
+    class inventarioModel << (M,#0D47A1) Model >> {
+        - fmtFecha(dateVal)
+        + findAll()
+        + getTotales()
+    }
+    class medicamentoModel << (M,#0D47A1) Model >> {
+        - fmtFecha(dateVal)
+        - mapRow(m)
+        - calcEstado(stock, stockMin)
+        + findAll()
+        + findById(id)
+        + create(data)
+        + update(id, data)
+        + remove(id)
+        + getLaboratorios()
+        + getCategorias()
+        + registrarLote(id, data)
+    }
+    class notificacionModel << (M,#0D47A1) Model >> {
+        + findAll()
+        + marcarLeida(id)
+        + marcarTodas()
+    }
+    class reporteModel << (M,#0D47A1) Model >> {
+        + getResumen()
+        + getPorCategoria()
+        + getHistorial()
+        + registrarAccion(usuario, accion, modulo, detalle)
+    }
+}
+
+package "backend.services" <<Services>> {
+    class geminiService << (S,#FF6F00) Service >> {
+        - fetchGemini(url, options)
+        - parseJsonArray(text)
+        + generarSugerenciasFarmaceuticas(query)
+        + generarVariantesFarmaceuticas(nombreBase)
+    }
+}
+
+package "backend.data" <<Data>> {
+    class catalogoFallback << (D,#880E4F) Data >> {
+        + CATALOGO: Array
+        + buscarLocal(query, limit)
+        + buscarVariantes(nombreBase, limit)
+    }
+}
+
+' Relaciones de Dependencia (Uso de Modelos y Servicios por los Controladores)
+analyticsController ..> analyticsModel : usa
+authController ..> userModel : usa
+authController ..> reporteModel : usa
+dashboardController ..> dashboardModel : usa
+inventarioController ..> inventarioModel : usa
+
+medicamentoController ..> medicamentoModel : usa
+medicamentoController ..> reporteModel : usa
+medicamentoController ..> geminiService : usa
+medicamentoController ..> catalogoFallback : usa
+
+notificacionController ..> notificacionModel : usa
+reporteController ..> reporteModel : usa
+
+userController ..> userModel : usa
+userController ..> reporteModel : usa
+
+@enduml

@@ -1,0 +1,151 @@
+@startuml MOPGIMED Diagrama de Paquetes SAD
+
+top to bottom direction
+
+title "MOPGIMED — Diagrama de Paquetes (Vista Técnica)\nDocumento de Arquitectura de Software (SAD)"
+
+skinparam {
+  backgroundColor        #FFFFFF
+  shadowing              false
+  defaultFontName        Segoe UI
+  defaultFontSize        10
+  defaultFontColor       #1E293B
+  PackageBackgroundColor #F8FAFC
+  PackageBorderColor     #1E293B
+  PackageBorderThickness 2
+  PackageFontSize        11
+  PackageFontStyle       Bold
+  PackageFontColor       #1E293B
+  ClassBackgroundColor   #FFFFFF
+  ClassBorderColor       #94A3B8
+  ClassHeaderBackgroundColor #1E3A5F
+  ClassFontColor         #EEEEEE
+  ClassAttributeFontColor #374151
+  ClassAttributeFontSize  9
+  ArrowColor             #B91C1C
+  ArrowThickness         1.5
+  ArrowFontSize          9
+  ArrowFontColor         #64748B
+}
+
+' ════════════════════════════════════════════════════════
+'  BLOQUE FRONTEND
+' ════════════════════════════════════════════════════════
+package "Frontend  —  src/" as FRONTEND #EFF6FF {
+
+  package "src/pages/" as PAGES {
+    class "Login.jsx" <<page>>
+    class "Dashboard.jsx" <<page>>
+    class "Medicamentos.jsx" <<page>>
+    class "NuevoMedicamento.jsx" <<page>>
+    class "ControlInventario.jsx" <<page>>
+    class "Notificaciones.jsx" <<page>>
+    class "Analytics.jsx" <<page>>
+    class "Reportes.jsx" <<page>>
+    class "Usuarios.jsx" <<page>>
+  }
+
+  package "src/components/" as COMPONENTS {
+    class "Sidebar.jsx" <<component>>
+    class "Loader.jsx" <<component>>
+  }
+
+  package "src/context/" as CONTEXT {
+    class "AuthContext.jsx" <<context>>
+  }
+
+  package "src/services/" as SERVICES {
+    class "api.js" <<service>>
+  }
+
+}
+
+' ════════════════════════════════════════════════════════
+'  BLOQUE BACKEND
+' ════════════════════════════════════════════════════════
+package "Backend  —  backend/" as BACKEND #FFFBEB {
+
+  package "backend/routes/" as ROUTES {
+    class "auth.js" <<route>>
+    class "users.js" <<route>>
+    class "medicamentos.js" <<route>>
+    class "laboratorios.js" <<route>>
+    class "inventario.js" <<route>>
+    class "notificaciones.js" <<route>>
+    class "reportes.js" <<route>>
+    class "dashboard.js" <<route>>
+    class "analytics.js" <<route>>
+  }
+
+  package "backend/controllers/" as CONTROLLERS {
+    class "authController.js" <<controller>>
+    class "userController.js" <<controller>>
+    class "medicamentoController.js" <<controller>>
+    class "inventarioController.js" <<controller>>
+    class "notificacionController.js" <<controller>>
+    class "reporteController.js" <<controller>>
+    class "dashboardController.js" <<controller>>
+    class "analyticsController.js" <<controller>>
+  }
+
+  package "backend/models/" as MODELS {
+    class "userModel.js" <<model>>
+    class "medicamentoModel.js" <<model>>
+    class "inventarioModel.js" <<model>>
+    class "notificacionModel.js" <<model>>
+    class "reporteModel.js" <<model>>
+    class "dashboardModel.js" <<model>>
+    class "analyticsModel.js" <<model>>
+  }
+
+  package "backend/db/" as DB_CONN {
+    class "connection.js" <<database>>
+    class "index.js" <<entrypoint>>
+  }
+
+}
+
+' ════════════════════════════════════════════════════════
+'  BLOQUE BASE DE DATOS
+' ════════════════════════════════════════════════════════
+package "Base de Datos  —  MySQL: swipre_med" as DATABASE #ECFDF5 {
+
+  package "Tablas Principales" as TABLAS_MAIN {
+    class "users" <<table>>
+    class "medicamentos" <<table>>
+    class "notificaciones" <<table>>
+  }
+
+  package "Tablas de Auditoría" as TABLAS_AUDIT {
+    class "historial_acciones" <<table>>
+    class "alertas" <<table>>
+  }
+
+  package "Tablas de Análisis" as TABLAS_ANALYTICS {
+    class "movimientos_semana" <<table>>
+    class "comparativa_mensual" <<table>>
+    class "prediccion_demanda" <<table>>
+    class "tendencias" <<table>>
+    class "predicciones_criticas" <<table>>
+  }
+
+}
+
+' ════════════════════════════════════════════════════════
+'  DEPENDENCIAS ENTRE BLOQUES
+' ════════════════════════════════════════════════════════
+
+' Frontend → Backend
+SERVICES  ..> ROUTES      : HTTP REST\n(Axios)
+CONTEXT   ..> SERVICES    : usa api.js\npara autenticación
+PAGES     ..> SERVICES    : llama a api.js\npara datos
+
+' Backend — capas internas
+ROUTES      ..> CONTROLLERS : delega la\nlógica de negocio
+CONTROLLERS ..> MODELS      : accede a\nlos datos
+MODELS      ..> DB_CONN     : ejecuta\nconsultas SQL
+
+' Backend → Base de datos
+DB_CONN   ..> DATABASE   : conexión\nMySQL2 pool
+
+@enduml

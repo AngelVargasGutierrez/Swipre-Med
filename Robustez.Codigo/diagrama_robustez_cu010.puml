@@ -1,0 +1,111 @@
+@startuml Robustez_CU010_Codigo_MOPGIMED
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU010: Visualizar Semáforo de Stock (RF-010)\nMOPGIMED · Fiel al Código"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+' ─────────────────────────────────────────
+'  ACTOR
+' ─────────────────────────────────────────
+actor "Usuario\n(Logística / Jefatura)" as ACTOR
+
+' ─────────────────────────────────────────
+'  FILA 1 — Entidades
+' ─────────────────────────────────────────
+package "Entidad — Base de Datos (MySQL)" as PKG_E {
+  entity "medicamentos (Tabla)\n──────────────────────\nRegistros con stock y stock_min" as E1
+  entity "Columna 'estado'\n──────────────────────\nPrecalculado por calcEstado()\nen medicamentoModel.js" as E2
+  E1 -[hidden]right-> E2
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera
+' ─────────────────────────────────────────
+package "Frontera — Frontend (React)" as PKG_B {
+  boundary "ControlInventario.jsx\n(Tarjetas Stats)\n──────────────\nStat cards: Críticos, Bajos, Por Vencer" as B1
+  boundary "ControlInventario.jsx\n(Tabla)\n──────────────\nRenderiza <span className='badge red/yellow'>" as B2
+  B1 -[hidden]down-> B2
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Control
+' ─────────────────────────────────────────
+package "Control — Backend y API" as PKG_C {
+  control "api.getInventario()\n──────────────\nLlamada fetch GET /api/inventario" as C1
+  control "inventarioController.js\n──────────────\nEjecuta getInventario(req, res)" as C2
+  control "inventarioModel.js\n──────────────\nPromise.all([findAll(), getTotales()])" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+' ─────────────────────────────────────────
+'  Posicionamiento
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+' ─────────────────────────────────────────
+'  FLUJO
+' ─────────────────────────────────────────
+
+ACTOR --> B1  : 1. Navega a /inventario
+B1    --> C1  : 2. useEffect() dispara carga
+C1    --> C2  : 3. HTTP GET /api/inventario
+C2    --> C3  : 4. Llama a modelos
+C3    --> E1  : 5. pool.execute(SELECT...)\ny pool.execute(COUNT...)
+E1    --> E2  : 6. Extrae columna 'estado'
+E2    --> C3  : 7. Retorna filas a Node.js
+C3    --> C2  : 8. Devuelve objetos mapeados
+C2    --> C1  : 9. res.json({ medicamentos, totals })
+C1    --> B1  : 10. Actualiza estados en React\n(setMedicamentos, setTotals)
+C1    --> B2  : 11. Renderiza tabla con semáforo
+@enduml

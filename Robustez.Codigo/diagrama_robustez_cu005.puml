@@ -1,0 +1,143 @@
+@startuml Robustez_CU005_Codigo_MOPGIMED
+
+left to right direction
+
+title "Diagrama de Robustez — CU005 (fiel al código)\nRegistrar Medicamento Nuevo con Asistencia IA · RF-005 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+}
+
+' ═══════════════════════════════════════════
+'  ACTOR
+' ═══════════════════════════════════════════
+actor "Personal\ndel Hospital" as ACTOR
+
+' ═══════════════════════════════════════════
+'  FRONTERA — B1 → B4 (Medicamentos.jsx real)
+' ═══════════════════════════════════════════
+package "Frontera  —  Medicamentos.jsx" as PKG_B {
+  boundary "B1 — ia-search-toolbar\n#ia-buscar-med · labFilter\nonChange(search)\nsetDropdownOpen(true)" as B1
+  boundary "B2 — ia-combobox-panel\nia-combobox-list · elegirVariante(v)\nonKeyDownBusqueda()" as B2
+  boundary "B3 — ia-registro-panel\nregistrarMedicamento(e)\nstate: form · seleccion" as B3
+  boundary "B4 — msgOk / msgErr\nform-success · form-error\nrecargar() · limpiarSeleccion()" as B4
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+  B3 -[hidden]down-> B4
+}
+
+' ═══════════════════════════════════════════
+'  CONTROL — C1 → C5 (funciones reales)
+' ═══════════════════════════════════════════
+package "Control  —  Frontend y Backend" as PKG_C {
+  control "C1 — Medicamentos.jsx\ncargarVariantes()\nvariantesDesdeMedicamentos()\nlaboratoriosDesdeMedicamentos()\nfusionarVariantes(locales, remotas, 12)" as C1
+  control "C2 — geminiService.js\ngenerarVariantesFarmaceuticas(base)\nfetchGemini() → Gemini API" as C2
+  control "C3 — medicamentoController.js\ngetVariantesIA(req, res)\ncombinarVariantes()\nfiltrarVariantesPorLaboratorio()\nfusionarVariantes(desdeBD, variantes, 12)" as C3
+  control "C4 — medicamentoController.js\ncreate(req, res) · registrarLote(req, res)\n+ api.createMedicamento()\n+ api.registrarLote()" as C4
+  control "C5 — reporteModel.js\nregistrarAccion(\n  usuario, 'Registró nuevo lote',\n  'Medicamentos', detalle\n)" as C5
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+  C3 -[hidden]down-> C4
+  C4 -[hidden]down-> C5
+}
+
+' ═══════════════════════════════════════════
+'  ENTIDAD — E1 → E3 (persistencia real)
+' ═══════════════════════════════════════════
+package "Entidad  —  MySQL" as PKG_E {
+  entity "E1 — medicamentoModel.js\nMySQL tabla medicamentos\nfindAll() · create()\nregistrarLote() · findById()\ncalcEstado(stock, stockMin)" as E1
+  entity "E2 — catalogoFallback.js\nCATALOGO[]\nbuscarVariantes(base, 12)" as E2
+  entity "E3 — reporteModel.js\nMySQL historial_acciones\nINSERT fecha, usuario,\naccion, modulo, detalle" as E3
+  E1 -[hidden]down-> E2
+  E2 -[hidden]down-> E3
+}
+
+' ═══════════════════════════════════════════
+'  POSICIONAMIENTO Actor | Frontera | Control | Entidad
+' ═══════════════════════════════════════════
+ACTOR -[hidden]right-> B1
+B1    -[hidden]right-> C1
+C1    -[hidden]right-> E1
+
+B2 -[hidden]right-> C3
+C3 -[hidden]right-> E2
+B3 -[hidden]right-> C4
+C4 -[hidden]right-> E1
+B4 -[hidden]right-> C5
+C5 -[hidden]right-> E3
+
+' ═══════════════════════════════════════════
+'  FLUJO — Coincide con diagrama_robustez_cu005 (lenguaje natural)
+' ═══════════════════════════════════════════
+
+' Fase 1 — búsqueda local
+ACTOR --> B1 : 1. Abre Gestión de\nMedicamentos · onChange(search)
+B1 --> C1 : 2. cargarVariantes()\nvariantesDesdeMedicamentos()
+C1 --> E1 : 3. filtra state medicamentos[]\n(coincideMedicamento · debounce 350ms)
+C1 --> B2 : 4. setVariantes(locales)\nsetMotorIA('base-de-datos')
+B2 --> ACTOR : 5. render ia-combobox-option\nresultados locales visibles
+
+' Fase 2 — variantes servidor + IA
+B1 --> C3 : 6. api.getVariantesIA()\nGET /variantes-ia?q=&laboratorio=
+C3 --> E1 : 7. medicamentoModel.findAll()\nvariantesDesdeInventario()
+C3 --> C2 : 8. generarVariantesFarmaceuticas(base)
+C2 --> E2 : 9. catch → catalogoFallback\n.buscarVariantes(base, 12)
+C2 --> C3 : 10. geminiList[] devuelto
+C3 --> C3 : 11. combinarVariantes() +\nfiltrarVariantesPorLaboratorio() +\nfusionarVariantes(desdeBD, variantes, 12)
+C3 --> B2 : 12. res.json({ variantes,\nlaboratorios, motor, totalBD })
+B2 --> ACTOR : 13. lista fusionada:\nia-tag-inventario | ia-tag-sugerencia
+
+' Fase 3 — selección y registro
+ACTOR --> B2 : 14. elegirVariante(v)
+B2 --> B3 : 15. setSeleccion · setForm\nrender ia-registro-panel
+ACTOR --> B3 : 16. submit registrarMedicamento(e)
+
+B3 --> C4 : 17. payload validado
+
+C4 --> E1 : 18a. seleccion.medicamentoId:\nregistrarLote(id) → UPDATE stock
+C4 --> C5 : 19. registrarAccion()\n(solo en registrarLote)
+C5 --> E3 : 20. INSERT historial_acciones
+
+C4 --> E1 : 18b. medicamentoId null:\ncreate() → INSERT medicamentos
+C4 --> B4 : 21. setMsgOk / setMsgErr
+B4 --> ACTOR : 22. recargar() · limpiarSeleccion()\nformulario listo para nueva búsqueda
+
+@enduml

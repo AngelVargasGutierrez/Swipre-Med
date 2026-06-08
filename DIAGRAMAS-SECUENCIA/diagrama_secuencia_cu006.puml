@@ -1,0 +1,96 @@
+@startuml Secuencia CU006 MOPGIMED
+
+title "Diagrama de Secuencia — CU006: Consultar Medicamento (Disponibilidad y Precio) (RF-006)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Caja Farmacia / Técnico" as ACTOR
+
+box "Frontera — Pantallas que ve el personal" #EFF6FF
+  participant "Barra de Búsqueda\nen Inventario" as B1
+  participant "Tabla de Medicamentos\nen Pantalla" as B2
+  participant "Ficha de Detalle\ndel Medicamento" as B3
+end box
+
+box "Control — Procesos internos del sistema" #FFFBEB
+  participant "Filtro en Tiempo Real" as C1
+  participant "Controlador de\nDetalles de Medicamento" as C2
+end box
+
+box "Entidad — Información guardada" #ECFDF5
+  participant "Lista de Medicamentos\nen Memoria" as E1
+  participant "Texto de Búsqueda" as E2
+end box
+
+== 1. Carga Inicial de Datos ==
+note over B2: Al entrar al módulo, se carga todo el inventario
+C2 -> E1 : Carga medicamentos del inventario
+E1 --> B2 : Muestra medicamentos en la tabla
+
+== 2. Filtrado en Tiempo Real ==
+ACTOR -> B1 : Escribe el nombre del medicamento (ej. Paracetamol)
+B1 -> E2 : Actualiza el texto de búsqueda guardado
+E2 --> C1 : Envía el texto de búsqueda actual
+E1 --> C1 : Envía la lista de medicamentos completa
+C1 -> C1 : Filtra los medicamentos que coinciden con el texto escrito
+C1 -> B2 : Muestra solo los medicamentos filtrados en la tabla
+B2 --> ACTOR : El personal ve el listado actualizado al instante
+
+== 3. Consulta de Detalles y Precio ==
+ACTOR -> B2 : Hace clic en el ícono del ojo (👁) de una fila
+B2 -> C2 : Solicita abrir el detalle de ese medicamento
+C2 -> B3 : Dibuja la ventana flotante de detalle
+
+activate B3 #E0F2FE
+B3 -> B3 : Evalúa la cantidad en stock para definir alerta visual (semáforo)
+
+alt Stock es 0 (Crítico)
+  B3 -> B3 : Pinta la ventana de rojo y muestra alerta de "Agotado"
+else Stock es menor o igual al mínimo (Bajo)
+  B3 -> B3 : Pinta la ventana de amarillo con advertencia
+else Stock es normal (Suficiente)
+  B3 -> B3 : Pinta la ventana de verde con estado saludable
+end
+
+B3 --> ACTOR : Despliega la ventana flotante mostrando Precio de Venta y stock real
+
+== 4. Cierre de la Consulta ==
+ACTOR -> B3 : Hace clic en "Cerrar" o en la (X)
+B3 -> C2 : Solicita cerrar la ventana de detalles
+deactivate B3
+
+C2 -> B2 : Quita la ventana flotante y vuelve a la tabla principal
+B2 --> ACTOR : El personal regresa limpiamente a la pantalla de búsqueda
+
+@enduml

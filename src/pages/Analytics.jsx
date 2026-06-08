@@ -22,30 +22,23 @@ export default function Analytics() {
 
   return (
     <>
-      <h1 className="page-title">🧠 Analytics Inteligente</h1>
+      <h1 className="page-title">ANALÍTICAS</h1>
       <p className="page-subtitle">Predicciones y análisis avanzado impulsado por IA</p>
 
       {/* ── Insight cards ────────────────────────────── */}
       <div className="insight-grid">
         <div className="insight-card purple">
-          <div className="insight-card-title">✦ Insight del Día</div>
+          <div className="insight-card-title">Insight del Día</div>
           <div className="insight-card-desc">
             Se detectó un aumento del 22% en la demanda de antiinflamatorios.
             Se recomienda incrementar el stock en un 15%.
           </div>
         </div>
         <div className="insight-card blue">
-          <div className="insight-card-title">↗ Tendencia General</div>
+          <div className="insight-card-title">Tendencia General</div>
           <div className="insight-card-desc">
             El consumo general presenta una tendencia alcista del 8.5%
             comparado con el trimestre anterior.
-          </div>
-        </div>
-        <div className="insight-card orange">
-          <div className="insight-card-title">⊕ Alerta Predictiva</div>
-          <div className="insight-card-desc">
-            {prediccionesCriticas.length} medicamentos alcanzarán stock crítico en los próximos 30 días.
-            Revisa las recomendaciones abajo.
           </div>
         </div>
       </div>
@@ -55,7 +48,7 @@ export default function Analytics() {
         {/* Area chart – Predicción */}
         <div className="chart-card">
           <div className="chart-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
-            🧠 Predicción de Demanda (IA)
+            Predicción de Demanda (IA)
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={prediccionDemanda}>
@@ -87,7 +80,7 @@ export default function Analytics() {
         {/* Grouped bar – Comparativa */}
         <div className="chart-card">
           <div className="chart-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
-            📊 Comparativa Mensual
+            Comparativa Mensual
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={comparativaMensual} barGap={3}>
@@ -108,7 +101,7 @@ export default function Analytics() {
         {/* Tendencias */}
         <div className="chart-card">
           <div className="chart-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
-            ↗ Tendencias de Consumo
+            Tendencias de Consumo
           </div>
           {tendencias.map(t => (
             <div key={t.categoria} className="tendency-row">
@@ -124,7 +117,7 @@ export default function Analytics() {
         {/* Predicciones críticas */}
         <div className="chart-card">
           <div className="chart-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
-            ⊕ Predicciones Críticas
+            Predicciones Críticas
           </div>
           {prediccionesCriticas.map((p, i) => (
             <div key={i} className={`pred-card ${p.prioridad === 'Alta' ? 'alta' : 'media'}`}>
@@ -137,7 +130,7 @@ export default function Analytics() {
               <div className="pred-card-info">Stock actual: <strong>{p.stockActual} unidades</strong></div>
               <div className="pred-card-info">Fecha predicha: {p.fechaPredicha}</div>
               <button className="pred-order-btn">
-                💡 Ordenar {p.ordenar} unidades
+                Ordenar {p.ordenar} unidades
               </button>
             </div>
           ))}
@@ -147,7 +140,7 @@ export default function Analytics() {
       {/* ── Recomendaciones IA ────────────────────────── */}
       <div className="chart-card" style={{ marginBottom:0 }}>
         <div className="chart-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
-          ✦ Recomendaciones IA
+          Recomendaciones IA
         </div>
         <div className="recommend-grid">
           <div className="recommend-card purple">

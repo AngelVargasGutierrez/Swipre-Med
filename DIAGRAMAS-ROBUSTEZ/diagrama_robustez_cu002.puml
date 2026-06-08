@@ -1,8 +1,8 @@
-@startuml Robustez - CU002 Gestionar Medicamentos MOPGIMED
+@startuml Robustez - CU002 Gestionar Usuarios MOPGIMED
 
-left to right direction
+top to bottom direction
 
-title "Diagrama de Robustez — CU002: Gestionar Medicamentos\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+title "Diagrama de Robustez — CU002: Gestionar Usuarios y Asignar Rol (RF-002)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
 
 skinparam {
   backgroundColor    #FFFFFF
@@ -56,66 +56,76 @@ skinparam package {
 ' ─────────────────────────────────────────
 '  ACTOR
 ' ─────────────────────────────────────────
-actor "Personal Autorizado\n(Farmacia / Administrador)" as ACTOR
+actor "Administrador\ndel Sistema" as ACTOR
 
 ' ─────────────────────────────────────────
-'  COLUMNA 1 — Fronteras
+'  FILA 1 — Entidades (arriba, ancho completo)
 ' ─────────────────────────────────────────
-package "Frontera  —  Pantallas que ve el personal" as PKG_B {
-  boundary "Lista de Medicamentos\n──────────────\nTabla con todos los medicamentos,\nbúsqueda y filtros por categoría" as B1
-  boundary "Formulario del Medicamento\n──────────────\nCampos para registrar,\neditar o eliminar un medicamento" as B2
-  boundary "Aviso de Resultado\n──────────────\nOperación exitosa o\nmensaje de datos incorrectos" as B3
+package "Entidad  —  Información guardada en el sistema" as PKG_E {
+  entity "Registro de Usuarios\n──────────────────\nNombre · Usuario · Contraseña\nEmail · Rol · Estado · Fecha creación" as E1
+  entity "Tabla de Roles\n──────────────────\nAdministrador · Farmacia · Jefatura\n(etiqueta y permisos de cada rol)" as E2
+  entity "Historial de Actividad\n──────────────────\nFecha · Hora · Administrador\nAcción realizada · Usuario afectado" as E3
+  E1 -[hidden]right-> E2
+  E2 -[hidden]right-> E3
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera (izquierda)
+' ─────────────────────────────────────────
+package "Frontera  —  Pantallas que ve el Administrador" as PKG_B {
+  boundary "Pantalla Gestión\nde Usuarios\n──────────────\nTabla con todos los usuarios:\nnombre, rol, estado y acciones" as B1
+  boundary "Formulario\nNuevo / Editar Usuario\n──────────────\nCampos: nombre, usuario,\ncontraseña, rol y email" as B2
+  boundary "Aviso de Error\n──────────────\nDatos incompletos,\nusuario duplicado o\ncontraseña vacía al crear" as B3
   B1 -[hidden]down-> B2
   B2 -[hidden]down-> B3
 }
 
 ' ─────────────────────────────────────────
-'  COLUMNA 2 — Controles
+'  FILA 2 — Control (derecha)
 ' ─────────────────────────────────────────
 package "Control  —  Procesos que ejecuta el sistema automáticamente" as PKG_C {
-  control "Buscador y Cargador\nde la Lista\n────────────\nFiltra y carga medicamentos\nsegún lo que busca el personal" as C1
-  control "Validador, Guardador\ny Eliminador\n────────────\nVerifica los datos, calcula\nel estado del stock y guarda\no elimina la ficha" as C2
-  control "Registrador\nde Actividad\n────────────\nGuarda cada acción: quién\nhizo qué cambio y cuándo" as C3
+  control "Gestor de Usuarios\n────────────\nCarga la lista de usuarios,\ncrea, actualiza y cambia\nel estado de las cuentas" as C1
+  control "Validador de Datos\n────────────\nVerifica campos obligatorios,\ndetecta usuario duplicado y\nexige contraseña al crear" as C2
+  control "Asignador de Rol\n────────────\nDetermina la etiqueta\ny permisos del rol\nseleccionado por el Admin" as C3
+  control "Registrador\nde Actividad\n────────────\nGuarda cada acción:\nquién, qué operación,\nfecha y hora exacta" as C4
   C1 -[hidden]down-> C2
   C2 -[hidden]down-> C3
+  C3 -[hidden]down-> C4
 }
 
 ' ─────────────────────────────────────────
-'  COLUMNA 3 — Entidades
+'  Posicionamiento: E arriba, B y C al lado
 ' ─────────────────────────────────────────
-package "Entidad  —  Información guardada en el sistema" as PKG_E {
-  entity "Fichas de Medicamentos\n──────────────────\nCódigo · Nombre · Laboratorio · Lote\nStock · Precio · Vencimiento · Categoría\nEstado: Normal / Bajo / Crítico" as E1
-  entity "Catálogo de\nLaboratorios y Categorías\n──────────────────\nLista de laboratorios registrados\ny grupos de medicamentos válidos" as E2
-  entity "Historial de Actividad\n──────────────────\nQuién realizó cada cambio,\nqué acción fue y cuándo" as E3
-  E1 -[hidden]down-> E2
-  E2 -[hidden]down-> E3
-}
-
-' ─────────────────────────────────────────
-'  Orden de columnas: B → C → E
-' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
 PKG_B -[hidden]right-> PKG_C
-PKG_C -[hidden]right-> PKG_E
 
 ' ─────────────────────────────────────────
-'  FLUJO
+'  FLUJO — Gestionar usuarios
 ' ─────────────────────────────────────────
+ACTOR --> B1  : 1. Accede al módulo\nGestión de Usuarios
 
-' Fila 1 — ver y buscar medicamentos
-ACTOR --> B1 : accede a la lista\nde medicamentos
-B1   --> C1  : solicita cargar\no buscar
-C1   --> E1  : consulta fichas\nguardadas en el sistema
+B1    --> C1  : 2. Solicita la lista\nde usuarios registrados
+C1    --> E1  : 3. Consulta todos\nlos usuarios del sistema
+E1    --> B1  : 4. Muestra la tabla\ncon nombre, rol y estado
 
-' Fila 2 — registrar, editar o eliminar
-ACTOR --> B2  : abre el formulario\npara registrar,\neditar o eliminar
-B2   --> C2   : envía los datos\ndel formulario
-C2   --> E2   : verifica laboratorio\ny categoría válidos
-C2   --> E1   : guarda, actualiza\no elimina la ficha
-C2   --> C3   : notifica la\nacción realizada
+ACTOR --> B1  : 5. Hace clic en\n"Nuevo Usuario" o en\nel ícono Editar
+B1    --> B2  : 6. Abre el formulario\nvacío o pre-cargado
 
-' Fila 3 — registrar y mostrar resultado
-C3   --> E3   : guarda en el\nhistorial de actividad
-C2   --> B3   : informa el resultado\nal personal
-B3   --> ACTOR : el personal ve\nsi la operación\nfue exitosa
+ACTOR --> B2  : 7. Completa o modifica\nlos campos y selecciona\nel rol del usuario
+B2    --> C2  : 8. Envía datos\npara validación
+
+C2    --> B3  : 9a. Datos inválidos\no usuario duplicado
+B3    --> ACTOR : muestra el aviso\nde error al Admin
+
+C2    --> C3  : 9b. Datos correctos:\nasigna o actualiza el rol
+C3    --> E2  : 10. Consulta la etiqueta\ndel rol seleccionado
+C3    --> C1  : 11. Rol asignado,\nprocede a guardar
+
+C1    --> E1  : 12. Inserta o actualiza\nel registro del usuario
+C1    --> C4  : 13. Notifica la\nacción realizada
+C4    --> E3  : 14. Guarda en el historial:\nAdmin, acción, usuario\nafectado y fecha
+
+C1    --> B1  : 15. Actualiza la tabla\ncon los cambios aplicados
+B1    --> ACTOR : 16. El Admin verifica\nel resultado en la lista
 
 @enduml

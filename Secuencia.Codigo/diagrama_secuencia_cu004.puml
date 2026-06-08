@@ -1,0 +1,123 @@
+@startuml CU004_RegistrarLoteExistente_Codigo
+
+title "CU004 — RF-004 Registrar Lote de Medicamento Existente · fiel al código\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Personal del Hospital" as ACTOR
+
+box "Frontend — React" #EFF6FF
+  participant "Medicamentos.jsx\n(onNuevo)" as MED_LIST
+  participant "NuevoMedicamento.jsx" as NUEVO
+  participant "api.js" as API
+end box
+
+box "Backend — Express" #FFFBEB
+  participant "medicamentos.js\n(routes)" as ROUTES
+  participant "laboratorios.js\n(routes)" as LAB_ROUTES
+  participant "medicamentoController.js" as CTRL
+  participant "medicamentoModel.js" as MODEL
+  participant "reporteModel.js" as REPORTE
+end box
+
+database "MySQL" as DB
+
+' ── Navegación ──
+ACTOR -> MED_LIST : clic "Nuevo Medicamento"\nonNuevo()
+MED_LIST -> NUEVO : render NuevoMedicamento({ onBack })
+
+' ── Carga inicial ──
+NUEVO -> API : getLaboratorios()
+API -> LAB_ROUTES : GET /api/laboratorios
+LAB_ROUTES --> API : labs[]
+API --> NUEVO : setLaboratorios(labs)
+
+NUEVO -> API : getMedicamentos()
+API -> ROUTES : GET /api/medicamentos
+ROUTES -> CTRL : getAll()
+CTRL -> MODEL : findAll()
+MODEL -> DB : SELECT * FROM medicamentos\nORDER BY nombre
+DB --> MODEL : filas
+MODEL --> CTRL : inventario[] (mapeado)
+CTRL --> API : JSON 200
+API --> NUEVO : setExistentes(meds)
+
+' ── Paso 1: laboratorio ──
+ACTOR -> NUEVO : handleLabChange(e)\nsetLabSelected(lab)
+NUEVO -> NUEVO : reset medSearch, medSelected,\nsuggestions, showDropdown
+
+' ── Paso 2: búsqueda combobox ──
+ACTOR -> NUEVO : handleMedSearch(e)\no handleSearchFocus()
+NUEVO -> NUEVO : getMatches(query)\nfilter: norm(laboratorio)===labSelected\n&& nombre.includes(q) · slice(0,6)
+NUEVO -> NUEVO : showSuggestions(matches)\nsetShowDropdown(true)
+NUEVO --> ACTOR : render med-autocomplete-dropdown\n#med-suggestions-list
+
+ACTOR -> NUEVO : onMouseDown → selectSuggestion(m)
+NUEVO -> NUEVO : setMedSelected(m)\nsetMedSearch(m.nombre)\nsetShowDropdown(false)
+NUEVO --> ACTOR : field-readonly:\nnombre · laboratorio · categoría
+
+' ── Datos del lote ──
+ACTOR -> NUEVO : setField() en manual-section\nlote · vencimiento · costoUnit ·\nprecioVenta · stockMin · stockInicial · rSanitario
+ACTOR -> NUEVO : submit → handleSubmit(e)
+
+alt !medSelected o validación falla
+  NUEVO -> NUEVO : alert('Selecciona un medicamento...')
+  NUEVO --> ACTOR : no envía al servidor
+
+else validación OK
+  NUEVO -> NUEVO : vencFmt =\nvencimiento.split('-').reverse().join('/')
+  NUEVO -> API : registrarLote(medSelected.id, {\n  lote, vencimiento, costoUnit,\n  precioVenta, stockMin, stockInicial,\n  rSanitario, usuario\n})
+  API -> ROUTES : POST /api/medicamentos/lote/:id
+  ROUTES -> CTRL : registrarLote(req, res)
+
+  CTRL -> MODEL : registrarLote(id, loteData)
+  MODEL -> MODEL : findById(id) → existing
+  MODEL -> DB : SELECT * FROM medicamentos\nWHERE id=?
+  DB --> MODEL : existing
+  MODEL -> MODEL : newStock = existing.stock + stockInicial\ncalcEstado(newStock, stockMin)
+  MODEL -> DB : UPDATE medicamentos SET\n  lote=?, stock=?, stock_min=?,\n  costo_unit=?, precio_venta=?,\n  vencimiento=?, r_sanitario=?, estado=?\nWHERE id=?
+  DB --> MODEL : ok
+  MODEL -> MODEL : findById(id) → actualizado
+  MODEL --> CTRL : medicamento actualizado
+
+  CTRL -> REPORTE : registrarAccion(\n  usuario,\n  'Registró nuevo lote',\n  'Medicamentos',\n  'Lote X de Y (stock añadido: Z)'\n)
+  REPORTE -> DB : INSERT INTO historial_acciones
+  CTRL --> API : res.json(actualizado)
+  API --> NUEVO : OK
+
+  NUEVO -> NUEVO : setOk(true)\nsetTimeout(onBack, 1800)
+  NUEVO --> ACTOR : pantalla CheckCircle\n"Lote registrado correctamente"\n→ vuelve a Medicamentos.jsx
+end
+
+@enduml

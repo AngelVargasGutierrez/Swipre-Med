@@ -1,0 +1,121 @@
+@startuml CU003_HistorialAcciones_Codigo
+
+title "CU003 — Visualizar Historial de Acciones (RF-003) · fiel al código\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Administrador\ndel Sistema" as ACTOR
+
+box "Frontend — React" #EFF6FF
+  participant "Usuarios.jsx\n(historial section)" as UI
+  participant "api.js" as API
+end box
+
+box "Backend — Express" #FFFBEB
+  participant "users.js\n(routes)" as ROUTES
+  participant "userController.js\ngetAll(req, res)" as CTRL
+  participant "userModel.js\nfindAll()" as UMODEL
+  participant "reporteModel.js\ngetHistorial()" as RMODEL
+end box
+
+database "MySQL" as DB
+
+' ── El historial se carga junto con el módulo de Usuarios ──
+ACTOR -> UI : navega a Gestión de Usuarios
+UI -> UI : useEffect → cargar()\nsetLoading(true)
+
+UI -> API : getUsers()\nreq('/users')
+API -> ROUTES : GET /api/users
+
+ROUTES -> CTRL : getAll(req, res)
+
+note over CTRL : Promise.all([findAll(), getHistorial()])\nAmbas consultas se ejecutan en paralelo
+
+CTRL -> UMODEL : findAll()
+UMODEL -> DB : SELECT id,username,role,name,\nrole_label,email,estado,created_at\nFROM users ORDER BY id
+DB --> UMODEL : filas de usuarios
+UMODEL --> CTRL : usersRaw[]
+
+CTRL -> RMODEL : getHistorial()
+RMODEL -> DB : SELECT fecha,usuario,accion,\nmodulo,detalle\nFROM historial_acciones\nORDER BY id DESC LIMIT 20
+DB --> RMODEL : filas del historial
+RMODEL --> CTRL : historial[]
+
+CTRL -> CTRL : mapea usersRaw:\n{ id, username, role, name,\nroleLabel, email, estado, createdAt }
+CTRL --> API : res.json({ users, historial })
+API --> UI : setUsers(data.users)\nsetHistorial(data.historial)\nsetLoading(false)
+
+' ── Renderizado del historial ──
+UI --> ACTOR : renderiza la tabla del historial\ncon columnas: Fecha/Hora · Usuario\nAcción · Módulo · Detalles
+
+note right of ACTOR
+  El historial se renderiza en la parte
+  inferior de Usuarios.jsx mediante
+  historial.map((h, i) =>
+    <tr key={i}>
+      <td>{h.fecha}</td>
+      <td>{h.usuario}</td>
+      <td>{h.accion}</td>
+      <td>{h.modulo}</td>
+      <td>{h.detalle}</td>
+    </tr>
+  )
+end note
+
+alt historial.length === 0
+  UI --> ACTOR : tabla vacía;\nsin acciones registradas aún
+else historial con registros
+  UI --> ACTOR : tabla con hasta 20 acciones\nordenadas del más reciente al más antiguo
+end
+
+' ── Registro automático al iniciar sesión (authController.js) ──
+note over RMODEL, DB
+  Cada vez que un usuario inicia sesión,
+  authController.js llama:
+  registrarAccion(user.name, 'Inició sesión',
+    'Acceso', user.role_label)
+  → INSERT INTO historial_acciones
+end note
+
+' ── Registro automático al gestionar usuarios (userController.js) ──
+note over RMODEL, DB
+  Cada vez que el Admin crea, edita
+  o cambia el estado de un usuario,
+  userController.js llama:
+  registrarAccion(operador, accion,
+    'Usuarios', name)
+  → INSERT INTO historial_acciones
+end note
+
+@enduml

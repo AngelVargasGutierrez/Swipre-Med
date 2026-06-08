@@ -1,9 +1,11 @@
 const pool = require('../db/connection');
 
 const ROLE_MENUS = {
-  admin:    ['dashboard','medicamentos','inventario','notificaciones','reportes','analytics','usuarios'],
-  farmacia: ['dashboard','medicamentos'],
-  jefatura: ['dashboard','inventario','notificaciones','reportes','analytics'],
+  admin:     ['dashboard','medicamentos','inventario','reportes','analytics','usuarios'],
+  almacen:   ['medicamentos','reportes'],
+  farmacia:  ['medicamentos'],
+  jefatura:  ['dashboard','medicamentos','inventario','reportes'],
+  logistica: ['dashboard','medicamentos','inventario','reportes'],
 };
 
 async function findByCredentials(username, password) {
@@ -22,7 +24,7 @@ async function findAll() {
 }
 
 async function getEstado(id) {
-  const [[row]] = await pool.execute('SELECT estado FROM users WHERE id = ?', [id]);
+  const [[row]] = await pool.execute('SELECT estado, name FROM users WHERE id = ?', [id]);
   return row || null;
 }
 
@@ -30,4 +32,26 @@ async function updateEstado(id, nuevoEstado) {
   await pool.execute('UPDATE users SET estado = ? WHERE id = ?', [nuevoEstado, id]);
 }
 
-module.exports = { findByCredentials, findAll, getEstado, updateEstado, ROLE_MENUS };
+async function create({ username, password, role, name, role_label, email }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [result] = await pool.execute(
+    'INSERT INTO users (username, password, role, name, role_label, email, estado, created_at) VALUES (?,?,?,?,?,?,?,?)',
+    [username, password, role, name, role_label, email || null, 'Activo', today]
+  );
+  return result.insertId;
+}
+
+async function update(id, { username, password, role, name, role_label, email }) {
+  const fields = ['username=?', 'role=?', 'name=?', 'role_label=?', 'email=?'];
+  const values = [username, role, name, role_label, email || null];
+  if (password) { fields.push('password=?'); values.push(password); }
+  values.push(id);
+  await pool.execute(`UPDATE users SET ${fields.join(',')} WHERE id=?`, values);
+}
+
+async function findByUsername(username) {
+  const [[row]] = await pool.execute('SELECT id FROM users WHERE username=?', [username]);
+  return row || null;
+}
+
+module.exports = { findByCredentials, findAll, getEstado, updateEstado, create, update, findByUsername, ROLE_MENUS };

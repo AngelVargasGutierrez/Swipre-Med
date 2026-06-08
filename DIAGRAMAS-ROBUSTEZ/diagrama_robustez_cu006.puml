@@ -1,0 +1,118 @@
+@startuml Robustez - CU006 Consultar Medicamento MOPGIMED
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU006: Consultar Medicamento (Disponibilidad y Precio) (RF-006)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+' ─────────────────────────────────────────
+'  ACTOR
+' ─────────────────────────────────────────
+actor "Caja Farmacia / Técnico" as ACTOR
+
+' ─────────────────────────────────────────
+'  FILA 1 — Entidades
+' ─────────────────────────────────────────
+package "Entidad — Información guardada en el sistema" as PKG_E {
+  entity "Lista de Medicamentos en Memoria\n──────────────────────\nTodos los medicamentos del inventario\ncargados automáticamente al inicio" as E1
+  entity "Texto de Búsqueda\n──────────────────────\nLa palabra o término específico que\nel usuario ha escrito en la barra" as E2
+  E1 -[hidden]right-> E2
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera
+' ─────────────────────────────────────────
+package "Frontera — Pantallas que ve el personal" as PKG_B {
+  boundary "Barra de Búsqueda\nen Inventario\n──────────────\nCampo de texto en pantalla\npara ingresar el nombre" as B1
+  boundary "Tabla de Medicamentos\nen Pantalla\n──────────────\nTabla reactiva que se reduce\ne incrementa según el filtro" as B2
+  boundary "Ficha de Detalle\ndel Medicamento\n──────────────\nVentana emergente que muestra\nPrecio, Existencias y Lote" as B3
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Control
+' ─────────────────────────────────────────
+package "Control — Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Filtro en Tiempo Real\n──────────────\nBusca coincidencias lógicas\nentre el texto del buscador\ny la lista de medicamentos" as C1
+  control "Controlador de\nDetalles de Medicamento\n──────────────\nAbre la ficha técnica y define\nel color de alerta de stock" as C2
+  C1 -[hidden]down-> C2
+}
+
+' ─────────────────────────────────────────
+'  Posicionamiento
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+' ─────────────────────────────────────────
+'  FLUJO
+' ─────────────────────────────────────────
+
+' Fase 1 — Listado y Filtrado
+ACTOR --> B1 : 1. Escribe el nombre del\nmedicamento (ej. Paracetamol)
+B1    --> E2 : 2. Actualiza el texto de búsqueda guardado
+E2    --> C1 : 3. Dispara la consulta reactiva del filtro
+E1    --> C1 : 4. Lee medicamentos de la memoria
+C1    --> B2 : 5. Filtra medicamentos en tiempo real\ny actualiza el listado en la tabla
+
+' Fase 2 — Consulta de Detalles (Modal)
+ACTOR --> B2 : 6. Hace clic en el ícono del ojo (👁)\nen la fila del medicamento deseado
+B2    --> C2 : 7. Envía el medicamento seleccionado al controlador
+C2    --> B3 : 8. Calcula semáforo de existencias\ny renderiza la ventana emergente
+B3    --> ACTOR : 9. Muestra el Precio de Venta exacto,\nstock disponible y lote
+
+' Cierre Modal
+ACTOR --> B3 : 10. Hace clic en botón "Cerrar" o en la (X)
+B3    --> C2 : 11. Solicita limpiar selección de medicamento
+C2    --> B2 : 12. Quita la ventana flotante y vuelve\na la tabla de búsqueda principal
+
+@enduml

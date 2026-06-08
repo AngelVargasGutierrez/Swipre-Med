@@ -1,0 +1,86 @@
+@startuml Robustez_CU011_Analisis
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU011 (Análisis / Lenguaje Natural)\nVisualizar Semáforo de Vencimientos · RF-011 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+actor "Logística / Jefatura" as ACTOR
+
+package "Entidad — Información guardada en el sistema" as PKG_E {
+  entity "Fechas de Caducidad\n──────────────────────\nLas fechas límite de los lotes\nde cada medicamento" as E1
+  entity "Reglas Temporales\n──────────────────────\nLógica de días restantes\npara definir estado (Vencido, 30d, 90d)" as E2
+  E1 -[hidden]right-> E2
+}
+
+package "Frontera — Pantallas que ve el personal" as PKG_B {
+  boundary "Alerta de Vencimientos\n──────────────\nTarjeta resumen con conteo\nde ítems críticos próximos a vencer" as B1
+  boundary "Tabla de Fechas\n──────────────\nMuestra listado con badges visuales\nsegún los días restantes" as B2
+  B1 -[hidden]down-> B2
+}
+
+package "Control — Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Lector de Inventario\n──────────────\nExtrae los medicamentos y sus\nfechas de caducidad" as C1
+  control "Calculador de Días\n──────────────\nCompara la fecha de caducidad\ncontra la fecha de hoy" as C2
+  control "Categorizador Visual\n──────────────\nAsigna el color y estado a mostrar\n(Vencido, Alerta 30d, Alerta 90d)" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+ACTOR --> B1  : 1. Ingresa a la interfaz\nde control y vencimientos
+B1    --> C1  : 2. Solicita el estado de las fechas
+C1    --> E1  : 3. Obtiene los registros de lotes
+E1    --> C1  : 4. Retorna listado
+C1    --> C2  : 5. Envía fechas para procesar
+C2    --> E2  : 6. Evalúa contra reglas temporales
+C2    --> C3  : 7. Mapea la severidad de la alerta
+C3    --> B1  : 8. Pinta tarjeta de alerta naranja
+C3    --> B2  : 9. Renderiza badges en la tabla
+
+@enduml

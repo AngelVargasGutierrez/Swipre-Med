@@ -1,0 +1,69 @@
+@startuml Secuencia_CU007_Codigo_MOPGIMED
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    11
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      10
+  ParticipantPadding 20
+  BoxPadding         10
+}
+
+title "Diagrama de Secuencia — CU007 (fiel al código)\nListar Medicamentos (Buscador + Exportar Excel) · RF-007 · MOPGIMED"
+
+' ═══════════════════════════════════════════
+' PARTICIPANTES
+' ═══════════════════════════════════════════
+actor "Logística /\nJefatura" as ACTOR #FFF1F2
+
+box "Frontend React" #F8FAFC
+  participant "Medicamentos.jsx" as MED #EFF6FF
+  participant "Estado Local\n(medicamentosFiltrados)" as STATE #EFF6FF
+end box
+
+box "Librería Externa" #F0FDF4
+  participant "xlsx\n(SheetJS)" as XLSX #DCFCE7
+end box
+
+' ═══════════════════════════════════════════
+' INICIO DE SECUENCIA
+' ═══════════════════════════════════════════
+autonumber
+
+== 1. Visualización y Contador ==
+note over MED: Tras cargar los datos iniciales
+MED -> STATE : Lee medicamentosFiltrados.length
+STATE --> MED : Retorna longitud del arreglo
+MED -> ACTOR : Renderiza etiqueta dinámica:\n"Mostrando X de Y medicamentos"
+MED -> ACTOR : Muestra botón "Exportar a Excel"\n(habilitado si X > 0)
+
+== 2. Proceso de Exportación ==
+ACTOR -> MED : Clic en botón "Exportar a Excel"
+MED -> MED : Ejecuta exportarExcel()
+
+MED -> STATE : Obtiene datos de medicamentosFiltrados[]
+STATE --> MED : Retorna array de objetos
+
+MED -> MED : Mapea atributos a formato tabla\n(Nombre, Categoría, Lote, Stock, etc.)
+note right of MED: Se generan columnas con\nformateo (ej. S/ 0.00)
+
+== 3. Interacción con SheetJS ==
+MED -> XLSX : XLSX.utils.json_to_sheet(dataAExportar)
+activate XLSX #BBF7D0
+XLSX --> MED : worksheet
+
+MED -> XLSX : XLSX.utils.book_new()
+XLSX --> MED : workbook
+
+MED -> MED : Ajusta ancho de columnas\n(worksheet['!cols'])
+
+MED -> XLSX : XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario")
+MED -> XLSX : XLSX.writeFile(workbook, "inventario_mopgimed_completo.xlsx")
+XLSX -> ACTOR : Inicia descarga del archivo en el navegador
+deactivate XLSX
+
+@enduml

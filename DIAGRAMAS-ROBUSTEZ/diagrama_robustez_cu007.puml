@@ -1,0 +1,117 @@
+@startuml Robustez - CU007 Exportar Excel MOPGIMED
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU007: Listar Medicamentos (Buscador + Exportar Excel) (RF-007)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+' ─────────────────────────────────────────
+'  ACTOR
+' ─────────────────────────────────────────
+actor "Logística / Jefatura" as ACTOR
+
+' ─────────────────────────────────────────
+'  FILA 1 — Entidades
+' ─────────────────────────────────────────
+package "Entidad — Información guardada en el sistema" as PKG_E {
+  entity "Lista de Medicamentos en Memoria\n──────────────────────\nTodos los registros del inventario\ncargados en la memoria rápida" as E1
+  entity "Lista de Medicamentos\nFiltrados en Memoria\n──────────────────────\nEl grupo específico de medicamentos\nque el usuario está viendo en pantalla" as E2
+  E1 -[hidden]right-> E2
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera
+' ─────────────────────────────────────────
+package "Frontera — Pantallas que ve el personal" as PKG_B {
+  boundary "Barra de Herramientas\n──────────────\nContiene los botones principales:\nExportar a Excel y Nuevo" as B1
+  boundary "Contador de Medicamentos\nen Pantalla\n──────────────\nMuestra la cantidad visible actual\n(ej. Mostrando X de Y)" as B2
+  boundary "Archivo Excel Descargado\n──────────────\nEl archivo físico guardado en la PC:\ninventario_mopgimed_completo.xlsx" as B3
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Control
+' ─────────────────────────────────────────
+package "Control — Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Preparador de Datos Excel\n──────────────\nMapea los datos técnicos\ny da formato de moneda y tabla" as C1
+  control "Convertidor a Formato Excel\n──────────────\nCrea la pestaña de Excel\ny auto-ajusta el ancho de columnas" as C2
+  control "Escritor del Archivo\n──────────────\nCrea el archivo final y dispara\nla descarga directa en el navegador" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+' ─────────────────────────────────────────
+'  Posicionamiento
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+' ─────────────────────────────────────────
+'  FLUJO
+' ─────────────────────────────────────────
+
+' Fase 1 — Contador en Pantalla
+E1    --> E2  : 1. Se derivan los registros filtrados\nsegún las búsquedas del usuario
+E2    --> B2  : 2. Envía la cantidad a mostrar en el contador
+
+' Fase 2 — Exportación
+ACTOR --> B1  : 3. Hace clic en el botón\n"Exportar a Excel"
+B1    --> C1  : 4. Llama a la función para exportar
+C1    --> E2  : 5. Lee la lista de medicamentos filtrados visibles
+E2    --> C1  : 6. Devuelve el arreglo filtrado con la data
+C1    --> C2  : 7. Mapea columnas, agrega formato S/ y envía datos
+C2    --> C2  : 8. Transforma JSON a celdas y auto-ajusta anchos
+C2    --> C3  : 9. Crea y organiza el libro de Excel
+C3    --> B3  : 10. Escribe el archivo en disco y descarga
+B3    --> ACTOR : 11. Archivo descargado listo para abrir
+
+@enduml

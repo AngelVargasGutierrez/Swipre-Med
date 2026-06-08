@@ -1,0 +1,112 @@
+@startuml Robustez_CU007_Codigo_MOPGIMED
+
+left to right direction
+
+title "Diagrama de Robustez — CU007 (fiel al código)\nListar Medicamentos (Buscador + Exportar Excel) · RF-007 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+}
+
+' ═══════════════════════════════════════════
+'  ACTOR
+' ═══════════════════════════════════════════
+actor "Usuario\n(Logística / Jefatura)" as ACTOR
+
+' ═══════════════════════════════════════════
+'  FRONTERA
+' ═══════════════════════════════════════════
+package "Frontera  —  Medicamentos.jsx" as PKG_B {
+  boundary "B1 — Toolbar\nBotón 'Exportar a Excel'\nBotón 'Nuevo Medicamento'" as B1
+  boundary "B2 — Contador Dinámico\n'Mostrando X de Y medicamentos'" as B2
+  boundary "B3 — Archivo Descargado\ninventario_mopgimed_completo.xlsx" as B3
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+}
+
+' ═══════════════════════════════════════════
+'  CONTROL
+' ═══════════════════════════════════════════
+package "Control  —  Frontend (React / XLSX)" as PKG_C {
+  control "C1 — exportarExcel()\nPrepara array: dataAExportar" as C1
+  control "C2 — XLSX.utils\njson_to_sheet()\nbook_new()\nbook_append_sheet()" as C2
+  control "C3 — XLSX.writeFile()\nDesencadena descarga en navegador" as C3
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+}
+
+' ═══════════════════════════════════════════
+'  ENTIDAD
+' ═══════════════════════════════════════════
+package "Entidad  —  Estado Local" as PKG_E {
+  entity "E1 — state: medicamentos[]\nBase de datos local" as E1
+  entity "E2 — variable: medicamentosFiltrados[]\nResultados en pantalla" as E2
+  E1 -[hidden]down-> E2
+}
+
+' ═══════════════════════════════════════════
+'  POSICIONAMIENTO
+' ═══════════════════════════════════════════
+ACTOR -[hidden]right-> B1
+B1    -[hidden]right-> C1
+C1    -[hidden]right-> E1
+
+' ═══════════════════════════════════════════
+'  FLUJO 
+' ═══════════════════════════════════════════
+
+' Fase 1 — Renderizado del Contador
+E1 --> E2 : 1. Se deriva de medicamentos[]\ny search input
+E2 --> B2 : 2. Actualiza contador dinámico
+
+' Fase 2 — Exportación
+ACTOR --> B1 : 3. Clic en botón\n'Exportar a Excel'
+B1 --> C1 : 4. Llama a exportarExcel()
+C1 --> E2 : 5. Lee medicamentosFiltrados[]
+E2 --> C1 : 6. Retorna array filtrado
+
+C1 --> C2 : 7. Envía dataAExportar
+C2 --> C2 : 8. Transforma JSON a\nhoja de cálculo y ajusta anchos
+C2 --> C3 : 9. Instancia workbook
+C3 --> B3 : 10. writeFile(workbook, '...xlsx')
+B3 --> ACTOR : 11. Archivo listo para abrir
+
+@enduml

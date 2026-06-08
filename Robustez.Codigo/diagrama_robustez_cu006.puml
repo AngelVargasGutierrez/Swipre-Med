@@ -1,0 +1,115 @@
+@startuml Robustez_CU006_Codigo_MOPGIMED
+
+left to right direction
+
+title "Diagrama de Robustez — CU006 (fiel al código)\nConsultar Medicamento (Disponibilidad y Precio) · RF-006 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+}
+
+' ═══════════════════════════════════════════
+'  ACTOR
+' ═══════════════════════════════════════════
+actor "Caja Farmacia\n/ Técnico" as ACTOR
+
+' ═══════════════════════════════════════════
+'  FRONTERA
+' ═══════════════════════════════════════════
+package "Frontera  —  Medicamentos.jsx" as PKG_B {
+  boundary "B1 — ia-search-toolbar\n#ia-buscar-med\nonChange(search)" as B1
+  boundary "B2 — table-container\nTabla Principal Inventario\nListado Reactivo" as B2
+  boundary "B3 — ModalDetalleMedicamento\nFicha Técnica\nPrecio Venta / Stock" as B3
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+}
+
+' ═══════════════════════════════════════════
+'  CONTROL
+' ═══════════════════════════════════════════
+package "Control  —  Frontend" as PKG_C {
+  control "C1 — Medicamentos.jsx\ncoincideMedicamento()\nmedicamentos.filter(m => ...)" as C1
+  control "C2 — ModalDetalleMedicamento.jsx\nsetMedicamentoDetalle(m)\nisCritico = stock === 0" as C2
+  C1 -[hidden]down-> C2
+}
+
+' ═══════════════════════════════════════════
+'  ENTIDAD
+' ═══════════════════════════════════════════
+package "Entidad  —  Estado Local" as PKG_E {
+  entity "E1 — state: medicamentos[]\nCargado al inicio (recargar())" as E1
+  entity "E2 — state: search\nTexto de búsqueda" as E2
+  E1 -[hidden]down-> E2
+}
+
+' ═══════════════════════════════════════════
+'  POSICIONAMIENTO Actor | Frontera | Control | Entidad
+' ═══════════════════════════════════════════
+ACTOR -[hidden]right-> B1
+B1    -[hidden]right-> C1
+C1    -[hidden]right-> E1
+
+B2 -[hidden]right-> C2
+C2 -[hidden]right-> E2
+
+' ═══════════════════════════════════════════
+'  FLUJO 
+' ═══════════════════════════════════════════
+
+' Fase 1 — Listado y Filtrado
+ACTOR --> B1 : 1. Escribe nombre\ndel medicamento (ej. Paracetamol)
+B1 --> E2 : 2. Actualiza state search
+E2 --> C1 : 3. Dispara re-renderizado
+E1 --> C1 : 4. Lee medicamentos[] completos
+C1 --> B2 : 5. Filtra medicamentos en tiempo real\ny actualiza tabla (medicamentosFiltrados)
+
+' Fase 2 — Consulta de Detalles (Modal)
+ACTOR --> B2 : 6. Clic en ícono ojo (👁)\nen la fila deseada
+B2 --> C2 : 7. setMedicamentoDetalle(m)
+C2 --> B3 : 8. Evalúa reglas de UI (semáforo)\ny renderiza ModalDetalleMedicamento
+B3 --> ACTOR : 9. Muestra Precio Venta Público,\nStock y Detalles
+
+' Cierre Modal
+ACTOR --> B3 : 10. Clic en botón "Cerrar" o en la (X)
+B3 --> C2 : 11. onClose() -> setMedicamentoDetalle(null)
+C2 --> B2 : 12. Oculta Modal\ny retorna a la tabla
+
+@enduml

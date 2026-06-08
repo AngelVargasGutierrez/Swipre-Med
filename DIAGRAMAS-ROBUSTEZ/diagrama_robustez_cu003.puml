@@ -1,8 +1,8 @@
-@startuml Robustez - CU003 Buscar Medicamento IA MOPGIMED
+ @startuml Robustez - CU003 Historial de Acciones MOPGIMED
 
 top to bottom direction
 
-title "Diagrama de Robustez — CU003: Buscar Medicamento con IA\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+title "Diagrama de Robustez — CU003: Visualizar Historial de Acciones (RF-003)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
 
 skinparam {
   backgroundColor    #FFFFFF
@@ -56,90 +56,57 @@ skinparam package {
 ' ─────────────────────────────────────────
 '  ACTOR
 ' ─────────────────────────────────────────
-actor "Personal Autorizado\n(Farmacia / Jefatura)" as ACTOR
+actor "Administrador\ndel Sistema" as ACTOR
 
 ' ─────────────────────────────────────────
-'  FRONTERA — primera en el flujo
-' ─────────────────────────────────────────
-package "Frontera  —  Pantallas que ve el personal" as PKG_B {
-
-  boundary "Buscador Inteligente\nde Medicamentos\n──────────────\nIngresa nombre, categoría\no laboratorio a buscar" as B1
-
-  boundary "Aviso: Sin Resultados\n──────────────\nEl sistema no encontró\nmedicamentos que coincidan\ncon la búsqueda ingresada" as B3
-
-  boundary "Panel de Resultados\ncon Análisis IA\n──────────────\nMuestra medicamentos encontrados\ncon tendencia de consumo,\npredicción de demanda\ny días de stock restantes" as B2
-
-  B1 -[hidden]right-> B3
-  B3 -[hidden]right-> B2
-}
-
-' ─────────────────────────────────────────
-'  CONTROL — segundo en el flujo
-' ─────────────────────────────────────────
-package "Control  —  Procesos que ejecuta el sistema automáticamente" as PKG_C {
-
-  control "Motor de\nBúsqueda Inteligente\n────────────\nEncuentra y ordena\nlos medicamentos que\ncoinciden con la búsqueda" as C1
-
-  control "Analizador de\nTendencias y Demanda\n────────────\nEstudia el historial de consumo,\ncalcula la tendencia de uso\ny predice la demanda futura" as C2
-
-  control "Generador de\nAlertas y Recomendaciones\n────────────\nProduce alertas automáticas:\ncuándo pedir, cuánto pedir\ny qué medicamentos son críticos" as C3
-
-  C1 -[hidden]right-> C2
-  C2 -[hidden]right-> C3
-}
-
-' ─────────────────────────────────────────
-'  ENTIDAD — destino final del flujo
+'  FILA 1 — Entidades (arriba)
 ' ─────────────────────────────────────────
 package "Entidad  —  Información guardada en el sistema" as PKG_E {
-
-  entity "Fichas de Medicamentos\n──────────────────\nCódigo · Nombre · Laboratorio\nStock · Precio · Vencimiento\nEstado: Normal / Bajo / Crítico" as E1
-
-  entity "Historial de\nMovimientos y Consumo\n──────────────────\nRegistro de entradas y salidas\nde cada medicamento por día,\nsemana y mes para el análisis" as E2
-
-  entity "Proyecciones y\nAlertas de la IA\n──────────────────\nPredicciones de agotamiento,\ntendencias por categoría\ny fechas críticas estimadas" as E3
-
+  entity "Registro de Usuarios\n──────────────────\nNombre · Usuario · Rol · Estado\n(cargado junto al historial)" as E1
+  entity "Historial de Actividad\n──────────────────\nFecha · Hora · Usuario\nAcción · Módulo · Detalle" as E2
   E1 -[hidden]right-> E2
-  E2 -[hidden]right-> E3
 }
 
 ' ─────────────────────────────────────────
-'  Orden del flujo: Frontera > Control > Entidad
+'  FILA 2 — Frontera (izquierda)
 ' ─────────────────────────────────────────
-PKG_B -[hidden]down-> PKG_C
-PKG_C -[hidden]down-> PKG_E
+package "Frontera  —  Pantallas que ve el Administrador" as PKG_B {
+  boundary "Pantalla Gestión\nde Usuarios\n──────────────\nSección superior: tabla de usuarios\nSección inferior: historial de acciones" as B1
+  boundary "Tabla del\nHistorial de Acciones\n──────────────\nColumnas: fecha, usuario,\nacción, módulo y detalle" as B2
+  B1 -[hidden]down-> B2
+}
 
 ' ─────────────────────────────────────────
-'  FLUJO DE ACCIONES
+'  FILA 2 — Control (derecha)
 ' ─────────────────────────────────────────
+package "Control  —  Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Consultor de Historial\n────────────\nCarga en paralelo la lista\nde usuarios y los últimos\n20 registros del historial" as C1
+  C1 -[hidden]down-> C1
+}
 
-' El personal inicia la búsqueda
-ACTOR --> B1 : 1. Ingresa el nombre,\ncategoría o laboratorio\na buscar
+' ─────────────────────────────────────────
+'  Posicionamiento: E arriba, B y C al lado
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
 
-' El buscador recibe y procesa
-B1    --> C1  : 2. Envía el texto\nde búsqueda
+' ─────────────────────────────────────────
+'  FLUJO — Visualizar historial
+' ─────────────────────────────────────────
+ACTOR --> B1  : 1. Accede al módulo\nGestión de Usuarios
 
-' El motor consulta las fichas
-C1    --> E1  : 3. Consulta fichas\nde medicamentos\nen el sistema
+B1    --> C1  : 2. Solicita usuarios\ne historial en paralelo
 
-' Caso sin resultados
-C1    --> B3  : 4a. No se encontraron\nmedicamentos que coincidan
-B3    --> ACTOR : muestra el aviso\nal personal
+C1    --> E1  : 3. Consulta todos\nlos usuarios del sistema
 
-' Caso con resultados: pasa al analizador
-C1    --> C2  : 4b. Pasa los medicamentos\nencontrados para análisis IA
+C1    --> E2  : 4. Consulta los últimos\n20 registros de actividad\nordenados de más reciente a más antiguo
 
-' El analizador estudia el historial
-C2    --> E2  : 5. Estudia el historial\nde consumo y movimientos
+E1    --> C1  : 5. Devuelve lista\nde usuarios
+E2    --> C1  : 6. Devuelve lista\nde acciones registradas
 
-' El analizador activa el generador
-C2    --> C3  : 6. Entrega el análisis\npara generar recomendaciones
+C1    --> B1  : 7. Entrega usuarios\ne historial juntos
+B1    --> B2  : 8. Renderiza la tabla\ndel historial en pantalla
 
-' El generador guarda las proyecciones
-C3    --> E3  : 7. Guarda proyecciones\ny alertas calculadas
-
-' Se muestran los resultados al personal
-C2    --> B2  : 8. Muestra resultados\ncon indicadores IA
-B2    --> ACTOR : 9. El personal ve el análisis,\nla predicción de demanda\ny las recomendaciones
+B2    --> ACTOR : 9. El Admin ve cada fila:\nfecha, usuario, acción,\nmódulo y detalle del evento
 
 @enduml

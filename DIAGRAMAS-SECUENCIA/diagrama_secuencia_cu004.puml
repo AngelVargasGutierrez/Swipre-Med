@@ -1,6 +1,6 @@
 @startuml Secuencia CU004 MOPGIMED
 
-title "Diagrama de Secuencia — CU004: Visualizar Historial de Acciones\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+title "Diagrama de Secuencia — CU004: Registrar Lote de Medicamento Existente (RF-004)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
 
 autonumber
 
@@ -35,75 +35,62 @@ skinparam box {
   FontSize 11
 }
 
-actor "Personal Autorizado\n(Administrador / Jefatura)" as ACTOR
+actor "Personal del Hospital" as ACTOR
 
 box "Frontera — Pantallas que ve el personal" #EFF6FF
-  participant "Panel Historial\nde Actividad" as B1
-  participant "Filtros de\nConsulta" as B2
-  participant "Panel de Detalle\ndel Evento" as B3
+  participant "Pantalla de Registro\nde Lote (Nuevo Medicamento)" as B1
+  participant "Lista Desplegable\nde Sugerencias (max. 6)" as B2
+  participant "Formulario de Datos\ndel Lote Fisico" as B3
+  participant "Confirmacion y Retorno\na Medicamentos" as B4
 end box
 
 box "Control — Procesos internos del sistema" #FFFBEB
-  participant "Cargador\nde Historial" as C1
-  participant "Aplicador\nde Filtros" as C2
+  participant "Buscador por Laboratorio\ny Nombre" as C1
+  participant "Registrador de Lote\ny Actualizacion de Stock" as C2
+  participant "Calculador de Estado\nde Inventario" as C3
+  participant "Registrador\nde Actividad" as C4
 end box
 
 box "Entidad — Informacion guardada" #ECFDF5
-  participant "Historial\nde Actividad" as E1
+  participant "Inventario de\nMedicamentos" as E1
+  participant "Catalogo de\nLaboratorios" as E2
+  participant "Historial\nde Actividad" as E3
 end box
 
-group Ver el historial de actividad
-  ACTOR -> B1 : Accede al modulo\n"Historial de Actividad"\ndesde el menu lateral
-  B1 -> C1 : Solicita cargar\nlos registros mas recientes
-  C1 -> E1 : Consulta todos los\nregistros de actividad
-  E1 --> C1 : Devuelve registros\nordenados de mas\nreciente a mas antiguo
-  C1 --> B1 : Muestra la lista\nde acciones registradas
-  B1 --> ACTOR : El personal ve la lista completa:\nfecha, usuario, modulo y accion\nde cada operacion realizada
+ACTOR -> B1 : En Gestion de Medicamentos pulsa\n"Nuevo Medicamento" para registrar lote
+B1 -> E2 : Carga lista de\nlaboratorios disponibles
+E2 --> B1 : Devuelve fabricantes\ndisponibles en el sistema
+B1 -> E1 : Carga el catalogo\ncompleto de medicamentos
+E1 --> B1 : Devuelve inventario\ncargado en pantalla
 
-  note right of ACTOR
-    Cada fila muestra:
-    - Fecha y hora exacta
-    - Nombre del usuario
-    - Cargo del usuario
-    - Modulo del sistema
-    - Tipo de accion realizada
-  end note
-end
+ACTOR -> B1 : Paso 1: selecciona\nlaboratorio fabricante
+ACTOR -> B1 : Paso 2: escribe nombre\nen el buscador
 
-group Aplicar filtros de busqueda
-  ACTOR -> B2 : Ingresa el nombre del usuario\ncuyas acciones desea consultar
-  B2 -> C2 : Envia el criterio\nde busqueda al sistema
-  C2 -> E1 : Consulta el historial\nfiltrando por el usuario indicado
-  E1 --> C2 : Devuelve los registros\ndel usuario encontrado
-  C2 --> B1 : Actualiza la lista\ncon las acciones del usuario
+B1 -> C1 : Filtra por laboratorio y texto;\nmaximos 6 coincidencias
+C1 -> E1 : Consulta coincidencias\nen el inventario actual
+E1 --> C1 : Medicamentos que\ncoinciden con la busqueda
+C1 -> B2 : Devuelve las sugerencias\nencontradas
+B2 --> ACTOR : Muestra listado desplegable;\nel personal elige una opcion
 
-  ACTOR -> B2 : Selecciona el tipo de accion\nen el filtro (ej: "Creo medicamento")
-  B2 -> C2 : Envia el tipo de accion\ncomo criterio adicional
-  C2 -> E1 : Filtra combinando usuario\ny tipo de accion
-  E1 --> C2 : Devuelve los registros\nque cumplen ambos criterios
-  C2 --> B1 : Actualiza la lista\ncon los resultados filtrados
-  B1 --> ACTOR : El personal ve solo las acciones\ndel usuario y tipo seleccionados
+B1 -> B1 : Autocompleta nombre, laboratorio\ny categoria como campos de solo lectura
 
-  ACTOR -> B2 : Define el rango de fechas:\n"Desde" y "Hasta"
-  B2 -> C2 : Envia el rango\nde fechas como filtro
-  C2 -> E1 : Aplica todos los filtros activos:\nusuario, tipo de accion y fechas
-  E1 --> C2 : Devuelve registros\ndentro del periodo indicado
-  C2 --> B1 : Muestra la lista\nfinal filtrada y acotada
-  B1 --> ACTOR : El personal ve el historial\nexacto del periodo consultado
+ACTOR -> B3 : Completa lote, vencimiento, costo,\nprecio de venta, stock minimo,\nstock inicial y registro sanitario
+ACTOR -> B3 : Pulsa "Registrar lote"
 
-  alt No se encontraron registros con los filtros aplicados
-    C2 --> B3 : Sin registros para\nlos criterios definidos
-    B3 --> ACTOR : Muestra el aviso:\n"No hay registros para los\nfiltros seleccionados"
-  end
-end
+B3 -> C2 : Envia identificador del\nmedicamento y datos del lote
 
-group Ver el detalle completo de una accion
-  ACTOR -> B1 : Hace clic sobre una fila\ndel historial para ver el detalle
-  B1 -> C1 : Solicita la informacion\ncompleta del evento seleccionado
-  C1 -> E1 : Recupera todos los datos\ndel registro seleccionado
-  E1 --> C1 : Devuelve el detalle completo:\nusuario, modulo, datos modificados\ny hora exacta de la operacion
-  C1 --> B3 : Muestra el panel\ncon el detalle del evento
-  B3 --> ACTOR : El personal ve exactamente\nquien hizo que, en que modulo\ny a que hora se realizo la accion
+alt Sin medicamento seleccionado o datos invalidos
+  C2 -> B3 : Rechaza el formulario
+  B3 -> ACTOR : Muestra aviso de\ncorreccion requerida
+
+else Datos validos
+  C2 -> E1 : Suma el stock inicial al existente,\nactualiza lote, vencimiento,\nprecios y stock minimo
+  C2 -> C3 : Solicita recalcular\nel estado del medicamento
+  C3 -> E1 : Persiste el nuevo estado:\nNormal, Bajo o Critico
+  C2 -> C4 : Notifica el registro\ndel nuevo lote
+  C4 -> E3 : Guarda usuario, fecha\ny detalle del lote registrado
+  C2 -> B4 : Lote registrado\ncorrectamente
+  B4 --> ACTOR : Muestra confirmacion\ny vuelve al listado de medicamentos
 end
 
 @enduml

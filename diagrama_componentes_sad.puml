@@ -1,0 +1,204 @@
+@startuml MOPGIMED Diagrama de Componentes SAD
+
+left to right direction
+
+title "MOPGIMED — Diagrama de Componentes\nDocumento de Arquitectura de Software (SAD)"
+
+skinparam {
+  backgroundColor          #FFFFFF
+  shadowing                false
+  defaultFontName          Segoe UI
+  defaultFontSize          10
+  defaultFontColor         #1E293B
+  ComponentBackgroundColor #FFFFFF
+  ComponentBorderColor     #475569
+  ComponentFontSize        10
+  ComponentFontColor       #1E293B
+  InterfaceBackgroundColor #FFF5F5
+  InterfaceBorderColor     #B91C1C
+  ArrowColor               #B91C1C
+  ArrowThickness           1.5
+  ArrowFontSize            9
+  ArrowFontColor           #64748B
+  PackageBackgroundColor   #F8FAFC
+  PackageBorderColor       #94A3B8
+  PackageFontSize          11
+  PackageFontStyle         Bold
+  PackageFontColor         #334155
+  NodeBackgroundColor      #1E293B
+  NodeFontColor            #FFFFFF
+  NodeBorderColor          #0F172A
+  DatabaseBackgroundColor  #ECFDF5
+  DatabaseBorderColor      #065F46
+  DatabaseFontColor        #064E3B
+}
+
+' ════════════════════════════════════════════════════════
+'  CLIENTE
+' ════════════════════════════════════════════════════════
+node "Navegador Web\n(Chrome / Edge / Firefox)" as BROWSER
+
+' ════════════════════════════════════════════════════════
+'  FRONTEND — React 19 + Vite
+' ════════════════════════════════════════════════════════
+package "Frontend  —  localhost:5173" as FRONTEND #EFF6FF {
+
+  component "React App\n(src/main.jsx)" as REACT_APP
+
+  package "Páginas (src/pages/)" as PAGES {
+    component "Login.jsx" as C_LOGIN
+    component "Dashboard.jsx" as C_DASH
+    component "Medicamentos.jsx" as C_MED
+    component "NuevoMedicamento.jsx" as C_NEWMED
+    component "ControlInventario.jsx" as C_INV
+    component "Notificaciones.jsx" as C_NOTIF
+    component "Analytics.jsx" as C_ANALYTICS
+    component "Reportes.jsx" as C_REP
+    component "Usuarios.jsx" as C_USR
+  }
+
+  package "Infraestructura (src/)" as INFRA_FRONT {
+    component "AuthContext.jsx\n(src/context/)" as C_AUTH_CTX
+    component "Sidebar.jsx\n(src/components/)" as C_SIDEBAR
+    component "api.js\n(src/services/)" as C_API
+  }
+
+}
+
+' ════════════════════════════════════════════════════════
+'  BACKEND — Node.js + Express
+' ════════════════════════════════════════════════════════
+package "Backend  —  localhost:3001" as BACKEND #FFFBEB {
+
+  component "Express App\n(backend/index.js)" as EXPRESS_APP
+
+  package "Rutas (backend/routes/)" as ROUTES {
+    component "auth.js" as R_AUTH
+    component "users.js" as R_USERS
+    component "medicamentos.js" as R_MED
+    component "inventario.js" as R_INV
+    component "notificaciones.js" as R_NOTIF
+    component "reportes.js" as R_REP
+    component "dashboard.js" as R_DASH
+    component "analytics.js" as R_ANALYTICS
+    component "laboratorios.js" as R_LAB
+  }
+
+  package "Controladores (backend/controllers/)" as CONTROLLERS {
+    component "authController.js" as CTR_AUTH
+    component "userController.js" as CTR_USR
+    component "medicamentoController.js" as CTR_MED
+    component "inventarioController.js" as CTR_INV
+    component "notificacionController.js" as CTR_NOTIF
+    component "reporteController.js" as CTR_REP
+    component "dashboardController.js" as CTR_DASH
+    component "analyticsController.js" as CTR_ANALYTICS
+  }
+
+  package "Modelos (backend/models/)" as MODELS {
+    component "userModel.js" as M_USR
+    component "medicamentoModel.js" as M_MED
+    component "inventarioModel.js" as M_INV
+    component "notificacionModel.js" as M_NOTIF
+    component "reporteModel.js" as M_REP
+    component "dashboardModel.js" as M_DASH
+    component "analyticsModel.js" as M_ANALYTICS
+  }
+
+  component "connection.js\n(backend/db/)" as DB_POOL
+
+}
+
+' ════════════════════════════════════════════════════════
+'  BASE DE DATOS — MySQL
+' ════════════════════════════════════════════════════════
+database "MySQL\nswipre_med" as MYSQL {
+  component "users" as T_USERS
+  component "medicamentos" as T_MED
+  component "historial_acciones" as T_HIST
+  component "notificaciones" as T_NOTIF
+  component "alertas" as T_ALERTAS
+  component "movimientos_semana" as T_MOV
+  component "prediccion_demanda" as T_PRED
+  component "comparativa_mensual" as T_COMP
+  component "tendencias" as T_TEND
+  component "predicciones_criticas" as T_PRED_CRIT
+}
+
+' ════════════════════════════════════════════════════════
+'  CONEXIONES
+' ════════════════════════════════════════════════════════
+
+' Navegador → React App
+BROWSER        --> REACT_APP         : HTTP GET\nlocalhost:5173
+
+' React App → Páginas y contexto
+REACT_APP      --> C_AUTH_CTX        : provee contexto\nde autenticación
+REACT_APP      --> C_SIDEBAR         : renderiza\nnav lateral
+REACT_APP      --> C_LOGIN           : ruta /login
+REACT_APP      --> C_DASH            : ruta /dashboard
+REACT_APP      --> C_MED             : ruta /medicamentos
+REACT_APP      --> C_USR             : ruta /usuarios
+REACT_APP      --> C_INV             : ruta /inventario
+REACT_APP      --> C_NOTIF           : ruta /notificaciones
+REACT_APP      --> C_REP             : ruta /reportes
+REACT_APP      --> C_ANALYTICS       : ruta /analytics
+
+' Páginas → api.js
+C_LOGIN        --> C_API             : POST /api/auth/login
+C_USR          --> C_API             : GET/POST/PUT /api/users
+C_MED          --> C_API             : GET /api/medicamentos
+C_NEWMED       --> C_API             : POST/PUT /api/medicamentos
+C_INV          --> C_API             : GET /api/inventario
+C_NOTIF        --> C_API             : GET/PUT /api/notificaciones
+C_REP          --> C_API             : GET /api/reportes
+C_DASH         --> C_API             : GET /api/dashboard
+C_ANALYTICS    --> C_API             : GET /api/analytics
+
+' api.js → Express
+C_API          --> EXPRESS_APP       : HTTP REST\n(Axios)\nlocalhost:3001
+
+' Express → Rutas
+EXPRESS_APP    --> R_AUTH
+EXPRESS_APP    --> R_USERS
+EXPRESS_APP    --> R_MED
+EXPRESS_APP    --> R_INV
+EXPRESS_APP    --> R_NOTIF
+EXPRESS_APP    --> R_REP
+EXPRESS_APP    --> R_DASH
+EXPRESS_APP    --> R_ANALYTICS
+EXPRESS_APP    --> R_LAB
+
+' Rutas → Controladores
+R_AUTH         --> CTR_AUTH
+R_USERS        --> CTR_USR
+R_MED          --> CTR_MED
+R_INV          --> CTR_INV
+R_NOTIF        --> CTR_NOTIF
+R_REP          --> CTR_REP
+R_DASH         --> CTR_DASH
+R_ANALYTICS    --> CTR_ANALYTICS
+
+' Controladores → Modelos
+CTR_AUTH       --> M_USR
+CTR_USR        --> M_USR
+CTR_MED        --> M_MED
+CTR_INV        --> M_INV
+CTR_NOTIF      --> M_NOTIF
+CTR_REP        --> M_REP
+CTR_DASH       --> M_DASH
+CTR_ANALYTICS  --> M_ANALYTICS
+
+' Modelos → Pool de conexión
+M_USR          --> DB_POOL
+M_MED          --> DB_POOL
+M_INV          --> DB_POOL
+M_NOTIF        --> DB_POOL
+M_REP          --> DB_POOL
+M_DASH         --> DB_POOL
+M_ANALYTICS    --> DB_POOL
+
+' Pool → MySQL
+DB_POOL        --> MYSQL             : MySQL2\nConnection Pool\nPort 3306
+
+@enduml

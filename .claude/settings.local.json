@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(mysql -u root -e \"SHOW DATABASES;\")",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SHOW DATABASES;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SHOW TABLES FROM swipre_med;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT username, password, estado FROM swipre_med.users;\" 2>&1)",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"admin\\\\\",\\\\\"password\\\\\":\\\\\"admin123\\\\\"}\")",
+      "Bash(taskkill /F /IM node.exe)",
+      "PowerShell(Stop-Process -Name \"node\" -Force -ErrorAction SilentlyContinue)",
+      "Bash(python generar_sprint_backlog.py)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"admin\\\\\",\\\\\"password\\\\\":\\\\\"admin123\\\\\"}\" -v)",
+      "Bash(curl -s http://localhost:3001/api/users)",
+      "Bash(node -e ' *)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT 1;\" 2>&1)",
+      "PowerShell(Start-Process \"C:\\\\xampp\\\\xampp-control.exe\" -ErrorAction SilentlyContinue)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysqld.exe\" --standalone 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT fecha, usuario, accion, modulo, detalle FROM swipre_med.historial_acciones ORDER BY id DESC LIMIT 5;\" 2>&1)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(python -c ' *)",
+      "Bash(python generar_srs.py)"
+    ]
+  }
+}

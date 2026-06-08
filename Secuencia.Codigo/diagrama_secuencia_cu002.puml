@@ -1,0 +1,152 @@
+@startuml CU002_GestionarUsuarios_Codigo
+
+title "CU002 — Gestionar Usuarios y Asignar Rol (RF-002) · fiel al código\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Administrador\ndel Sistema" as ACTOR
+
+box "Frontend — React" #EFF6FF
+  participant "Usuarios.jsx" as UI
+  participant "api.js" as API
+end box
+
+box "Backend — Express" #FFFBEB
+  participant "users.js\n(routes)" as ROUTES
+  participant "userController.js" as CTRL
+  participant "userModel.js" as UMODEL
+  participant "reporteModel.js\nregistrarAccion()" as RMODEL
+end box
+
+database "MySQL" as DB
+
+' ── Carga inicial del módulo ──
+ACTOR -> UI : navega a Gestión de Usuarios
+UI -> UI : useEffect → cargar()
+UI -> API : getUsers()
+API -> ROUTES : GET /api/users
+ROUTES -> CTRL : getAll(req, res)
+CTRL -> UMODEL : findAll()
+CTRL -> RMODEL : getHistorial()
+UMODEL -> DB : SELECT id,username,role,name,\nrole_label,email,estado,created_at\nFROM users ORDER BY id
+RMODEL -> DB : SELECT fecha,usuario,accion,\nmodulo,detalle FROM historial_acciones\nORDER BY id DESC LIMIT 20
+DB --> UMODEL : filas de usuarios
+DB --> RMODEL : filas de historial
+UMODEL --> CTRL : users[]
+RMODEL --> CTRL : historial[]
+CTRL --> API : res.json({ users, historial })
+API --> UI : setUsers(data.users)\nsetHistorial(data.historial)
+UI --> ACTOR : tabla de usuarios + historial visibles
+
+== Crear nuevo usuario ==
+
+ACTOR -> UI : onClick → abrirCrear()\nsetModal(true) · setEditando(null)
+UI --> ACTOR : renderiza modal vacío\n(FORM_VACIO)
+
+ACTOR -> UI : completa nombre, usuario,\ncontraseña, rol y email;\nsubmit → handleGuardar(e)
+
+alt !form.name.trim() || !form.username.trim() || !form.password.trim()
+  UI --> ACTOR : setError('Nombre y usuario son obligatorios')
+
+else validación OK
+  UI -> API : createUser({ ...form, operador: currentUser.name })
+  API -> ROUTES : POST /api/users
+  ROUTES -> CTRL : createUser(req, res)
+  CTRL -> CTRL : ROLE_LABELS[role] → valida rol
+  CTRL -> UMODEL : findByUsername(username)
+  UMODEL -> DB : SELECT id FROM users WHERE username=?
+  DB --> UMODEL : null o fila
+
+  alt username ya existe
+    CTRL --> API : res.status(409)\n({ error: 'El nombre de usuario ya existe' })
+    API --> UI : setError(err.message)
+    UI --> ACTOR : muestra error en modal
+
+  else username disponible
+    CTRL -> UMODEL : create({ username, password, role,\nname, role_label, email })
+    UMODEL -> DB : INSERT INTO users\n(username,password,role,name,\nrole_label,email,estado,created_at)
+    DB --> UMODEL : insertId
+    UMODEL --> CTRL : id del nuevo usuario
+    CTRL -> RMODEL : registrarAccion(operador,\n'Creó usuario', 'Usuarios', name)
+    RMODEL -> DB : INSERT INTO historial_acciones
+    CTRL --> API : res.status(201).json({ id })
+    API --> UI : cerrarModal() · cargar()
+    UI --> ACTOR : modal cerrado;\nlista actualizada con el nuevo usuario
+  end
+end
+
+== Editar usuario ==
+
+ACTOR -> UI : onClick → abrirEditar(u)\nsetEditando(u) · setModal(true)
+UI --> ACTOR : modal con datos\npre-cargados del usuario
+
+ACTOR -> UI : modifica campos;\nsubmit → handleGuardar(e)
+UI -> API : updateUser(editando.id,\n{ ...form, operador })
+API -> ROUTES : PUT /api/users/:id
+ROUTES -> CTRL : updateUser(req, res)
+CTRL -> UMODEL : findByUsername(username)
+UMODEL -> DB : SELECT id FROM users\nWHERE username=?
+alt username de otro usuario
+  CTRL --> API : res.status(409).json(error)
+  API --> UI : setError(err.message)
+else OK
+  CTRL -> UMODEL : update(id, { username, password,\nrole, name, role_label, email })
+  UMODEL -> DB : UPDATE users SET\nusername=?,role=?,name=?,...\nWHERE id=?
+  DB --> UMODEL : ok
+  CTRL -> RMODEL : registrarAccion(operador,\n'Actualizó usuario', 'Usuarios', name)
+  RMODEL -> DB : INSERT INTO historial_acciones
+  CTRL --> API : res.json({ ok: true })
+  API --> UI : cerrarModal() · cargar()
+  UI --> ACTOR : lista actualizada
+end
+
+== Activar / Desactivar usuario ==
+
+ACTOR -> UI : onClick → toggleEstado(id)
+UI -> API : toggleUserEstado(id, currentUser.name)
+API -> ROUTES : PATCH /api/users/:id/toggle
+ROUTES -> CTRL : toggleEstado(req, res)
+CTRL -> UMODEL : getEstado(id)
+UMODEL -> DB : SELECT estado,name\nFROM users WHERE id=?
+DB --> UMODEL : { estado, name }
+CTRL -> CTRL : nuevo = estado==='Activo'\n? 'Inactivo' : 'Activo'
+CTRL -> UMODEL : updateEstado(id, nuevo)
+UMODEL -> DB : UPDATE users SET estado=?\nWHERE id=?
+CTRL -> RMODEL : registrarAccion(operador,\naccion, 'Usuarios', row.name)
+RMODEL -> DB : INSERT INTO historial_acciones
+CTRL --> API : res.json({ estado: nuevo })
+API --> UI : setUsers(prev.map →\nactualiza estado del usuario)
+UI --> ACTOR : badge de estado actualizado\nen la tabla
+
+@enduml

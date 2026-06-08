@@ -1,0 +1,144 @@
+@startuml Robustez - CU005 Registrar Medicamento IA MOPGIMED
+
+top to bottom direction
+
+title "Diagrama de Robustez — CU005: Registrar Medicamento Nuevo con Asistencia IA (RF-005)\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+  FontSize           10
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+  FontSize           11
+  FontColor          #334155
+}
+
+' ─────────────────────────────────────────
+'  ACTOR
+' ─────────────────────────────────────────
+actor "Personal\ndel Hospital" as ACTOR
+
+' ─────────────────────────────────────────
+'  FILA 1 — Entidades (arriba, ancho completo)
+' ─────────────────────────────────────────
+package "Entidad  —  Información guardada en el sistema" as PKG_E {
+  entity "Inventario de Medicamentos\n──────────────────\nNombre · Laboratorio · Lote\nStock · Vencimiento · Estado · Costos" as E1
+  entity "Catálogo de Respaldo Local\n──────────────────\nListado de medicamentos comunes\npara cuando la IA no está disponible" as E2
+  entity "Historial de Actividad\n──────────────────\nFecha · Hora · Usuario\nDetalle del registro realizado" as E3
+  E1 -[hidden]right-> E2
+  E2 -[hidden]right-> E3
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Frontera (izquierda)
+' ─────────────────────────────────────────
+package "Frontera  —  Pantallas que ve el personal" as PKG_B {
+  boundary "Barra de Búsqueda\nInteligente con IA\n──────────────\nCampo de texto + filtro\nde laboratorio" as B1
+  boundary "Lista de Variantes\ny Sugerencias IA\n──────────────\nMuestra opciones del inventario\ny sugerencias del motor IA" as B2
+  boundary "Panel de Registro\ndel Medicamento\n──────────────\nFormulario con nombre, lote,\nvencimiento, costos y stock" as B3
+  boundary "Confirmación\nde Registro\n──────────────\nAviso de éxito o error\ny limpieza del formulario" as B4
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+  B3 -[hidden]down-> B4
+}
+
+' ─────────────────────────────────────────
+'  FILA 2 — Control (derecha)
+' ─────────────────────────────────────────
+package "Control  —  Procesos que ejecuta el sistema automáticamente" as PKG_C {
+  control "Buscador Local\nen Inventario\n────────────\nFiltra variantes en el inventario\nmientras el personal escribe;\nresultado inmediato sin esperar IA" as C1
+  control "Motor de Inteligencia\nArtificial (Gemini IA)\n────────────\nGenera variantes farmacéuticas\nsemánticamente relacionadas\ncon el texto ingresado" as C2
+  control "Combinador\nde Variantes\n────────────\nFusiona resultados locales, de IA\ny del catálogo de respaldo;\nelimina duplicados (máx. 12)" as C3
+  control "Registrador de\nMedicamento o Lote\n────────────\nSi el medicamento existe: suma stock\nSi es nuevo: crea en el catálogo\ncon el código generado automáticamente" as C4
+  control "Registrador\nde Actividad\n────────────\nGuarda quién registró el lote,\nfecha, hora y detalle\nen el historial del sistema" as C5
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+  C3 -[hidden]down-> C4
+  C4 -[hidden]down-> C5
+}
+
+' ─────────────────────────────────────────
+'  Posicionamiento: E arriba, B y C al lado
+' ─────────────────────────────────────────
+PKG_E -[hidden]down-> PKG_B
+PKG_B -[hidden]right-> PKG_C
+
+' ─────────────────────────────────────────
+'  FLUJO — Registrar medicamento nuevo con IA
+' ─────────────────────────────────────────
+ACTOR --> B1  : 1. Abre Gestión de\nMedicamentos y escribe\nel nombre a buscar
+
+B1    --> C1  : 2. Búsqueda local:\nfiltra variantes del inventario
+C1    --> E1  : 3. Busca coincidencias\nen medicamentos existentes
+C1    --> B2  : 4. Muestra variantes\nlocales de inmediato
+B2    --> ACTOR : 5. El personal ve opciones\nmientras sigue escribiendo
+
+B1    --> C3  : 6. Solicita variantes\nampliadas al servidor
+C3    --> E1  : 7. Verifica existencia\nen inventario
+C3    --> E2  : 8. Consulta catálogo\nde respaldo local
+C3    --> C2  : 9. Pide variantes\nal motor IA (Gemini)
+
+C2    --> C3  : 10a. IA responde:\nlista de variantes sugeridas
+C3    --> C3  : 10b. IA no disponible:\nusa solo inventario y catálogo local
+
+C3    --> B2  : 11. Fusiona y entrega\ntodas las variantes combinadas
+B2    --> ACTOR : 12. Lista actualizada con\netiqueta "Inventario" o "Sugerencia IA"
+
+ACTOR --> B2  : 13. Elige una variante\ndel listado desplegable
+B2    --> B3  : 14. Carga el formulario\ncon datos de la variante
+
+ACTOR --> B3  : 15. Completa lote,\nvencimiento, costos y stock
+ACTOR --> B3  : 16. Pulsa "Registrar Medicamento"
+
+B3    --> C4  : 17. Envía el formulario\nvalidado al sistema
+
+C4    --> E1  : 18a. Si existe en inventario:\nregistra nuevo lote (suma stock)
+C4    --> C5  : 19a. Notifica registro\ndel lote
+C5    --> E3  : 20a. Guarda en historial
+
+C4    --> E1  : 18b. Si es nuevo:\ninserta en el inventario
+C4    --> B4  : 21. Confirmación de éxito
+
+B4    --> ACTOR : 22. El formulario se limpia\nlisto para nueva búsqueda
+
+@enduml

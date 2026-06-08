@@ -1,0 +1,92 @@
+@startuml CU001_IniciarSesion_Codigo
+
+title "CU001 — Iniciar Sesión (RF-001) · fiel al código\nMOPGIMED · Sistema Inteligente de Inventario Farmacéutico"
+
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceArrowColor #B91C1C
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceLifeLineBorderColor #B91C1C
+skinparam sequenceGroupBorderColor #B91C1C
+skinparam sequenceGroupBackgroundColor #FFF5F5
+skinparam sequenceGroupFontStyle Bold
+skinparam noteFontSize 9
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #B45309
+
+skinparam actor {
+  BackgroundColor #FFF1F2
+  BorderColor #B91C1C
+  FontColor #7F1D1D
+  FontStyle Bold
+}
+
+skinparam participant {
+  BackgroundColor #FFFFFF
+  BorderColor #64748B
+  FontColor #1E293B
+  FontSize 10
+}
+
+skinparam box {
+  FontStyle Bold
+  FontSize 11
+}
+
+actor "Personal del Hospital" as ACTOR
+
+box "Frontend — React" #EFF6FF
+  participant "Login.jsx" as LOGIN
+  participant "App.jsx\n(setUser / navigate)" as APP
+end box
+
+box "Backend — Express" #FFFBEB
+  participant "auth.js\n(routes)" as ROUTES
+  participant "authController.js\nlogin(req, res)" as CTRL
+  participant "userModel.js\nfindByCredentials()" as UMODEL
+  participant "reporteModel.js\nregistrarAccion()" as RMODEL
+end box
+
+database "MySQL" as DB
+
+' ── Apertura del sistema ──
+ACTOR -> LOGIN : navega a la URL\n/ carga Login.jsx
+LOGIN --> ACTOR : renderiza formulario\nusuario + contraseña
+
+' ── Envío de credenciales ──
+ACTOR -> LOGIN : ingresa usuario y contraseña;\nhace clic en "Iniciar sesión"
+LOGIN -> ROUTES : api.login(username, password)\nPOST /api/auth/login\n{ username, password }
+
+ROUTES -> CTRL : login(req, res)
+
+' ── Verificación en base de datos ──
+CTRL -> UMODEL : findByCredentials(username, password)
+UMODEL -> DB : SELECT * FROM users\nWHERE username=? AND password=?\nAND estado='Activo'
+DB --> UMODEL : fila del usuario o vacío
+
+alt Usuario no encontrado / contraseña incorrecta / estado Inactivo
+  UMODEL --> CTRL : null
+  CTRL --> ROUTES : res.status(401).json\n({ error: 'Credenciales incorrectas' })
+  ROUTES --> LOGIN : Error 401
+  LOGIN --> ACTOR : muestra mensaje de error;\nformulario permanece activo
+
+else Credenciales válidas y usuario Activo
+  UMODEL --> CTRL : { id, username, role,\nname, role_label, email }
+
+  ' ── Registro de actividad ──
+  CTRL -> RMODEL : registrarAccion(\n  user.name,\n  'Inició sesión',\n  'Acceso',\n  user.role_label\n)
+  RMODEL -> DB : INSERT INTO historial_acciones\n(fecha, usuario, accion, modulo, detalle)
+
+  ' ── Construcción de respuesta ──
+  CTRL -> UMODEL : ROLE_MENUS[user.role]
+  UMODEL --> CTRL : menú según rol\n(admin / farmacia / jefatura)
+
+  CTRL --> ROUTES : res.json({\n  id, username, role,\n  name, roleLabel, email, menu\n})
+  ROUTES --> LOGIN : JSON 200 con datos\ndel usuario y menú
+  LOGIN -> APP : setUser(data)\ncarga contexto global de sesión
+  APP --> ACTOR : redirige al Dashboard\npersonalizado según rol
+end
+
+@enduml

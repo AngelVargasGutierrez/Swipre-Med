@@ -8,9 +8,9 @@ const ALL_ITEMS = [
   { key:'dashboard',      label:'Dashboard',          icon:LayoutDashboard },
   { key:'medicamentos',   label:'Medicamentos',        icon:Pill            },
   { key:'inventario',     label:'Control Inventario',  icon:ClipboardList   },
-  { key:'notificaciones', label:'Notificaciones',      icon:Bell            },
+
   { key:'reportes',       label:'Reportes',            icon:FileText        },
-  { key:'analytics',      label:'Analytics',           icon:BarChart2       },
+  { key:'analytics',      label:'ANALÍTICAS',          icon:BarChart2       },
   { key:'usuarios',       label:'Usuarios',            icon:Users           },
 ];
 

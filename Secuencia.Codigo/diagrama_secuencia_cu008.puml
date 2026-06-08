@@ -1,0 +1,56 @@
+@startuml Secuencia_CU008_Codigo_MOPGIMED
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    11
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      10
+  ParticipantPadding 20
+  BoxPadding         10
+}
+
+title "Diagrama de Secuencia — CU008 (fiel al código)\nFiltrar Listado de Medicamentos · RF-008 · MOPGIMED"
+
+' ═══════════════════════════════════════════
+' PARTICIPANTES
+' ═══════════════════════════════════════════
+actor "Logística /\nJefatura" as ACTOR #FFF1F2
+
+box "Frontend React" #F8FAFC
+  participant "Medicamentos.jsx" as MED #EFF6FF
+  participant "Estado Local\n(filtroLaboratorioPrincipal)" as STATE #EFF6FF
+end box
+
+' ═══════════════════════════════════════════
+' INICIO DE SECUENCIA
+' ═══════════════════════════════════════════
+autonumber
+
+== 1. Carga de Laboratorios en Filtro ==
+note over MED: Tras obtener los datos iniciales de la API
+MED -> MED : Extrae laboratorios únicos de medicamentos[]
+MED -> ACTOR : Renderiza <select> con todos los\nlaboratorios disponibles dinámicamente
+
+== 2. Selección de Filtro ==
+ACTOR -> MED : Abre <select> y elige un laboratorio\n(ej. "Pfizer")
+MED -> STATE : setFiltroLaboratorioPrincipal("Pfizer")
+STATE --> MED : Dispara re-renderizado
+
+== 3. Filtrado Cruzado y Actualización ==
+MED -> MED : medicamentos.filter()\n- Evalúa coincidencia de texto (search)\n- Evalúa coincidencia de laboratorio (filtroLaboratorioPrincipal)
+MED -> MED : Genera nuevo arreglo: medicamentosFiltrados
+MED -> ACTOR : Actualiza tabla mostrando solo las coincidencias
+MED -> ACTOR : Actualiza etiqueta del contador:\n"Mostrando X de Y medicamentos"
+
+== 4. Restablecer Filtro (Flujo Alterno) ==
+ACTOR -> MED : Elige "Todos los laboratorios" en <select>
+MED -> STATE : setFiltroLaboratorioPrincipal("")
+STATE --> MED : Dispara re-renderizado
+MED -> MED : medicamentosFiltrados vuelve a coincidir\ncon el total (si no hay texto en search)
+MED -> ACTOR : Muestra inventario completo
+
+@enduml

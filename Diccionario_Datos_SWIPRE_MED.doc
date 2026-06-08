@@ -1,0 +1,243 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Diccionario de Datos</title>
+<style>
+  body { font-family: "Calibri", "Arial", sans-serif; }
+  h1, h2, h3 { color: #2C3E50; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+  th, td { border: 1px solid #000000; padding: 8px; text-align: left; }
+  th { background-color: #f2f2f2; font-weight: bold; }
+  .center { text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="center">
+  <h2>UNIVERSIDAD PRIVADA DE TACNA</h2>
+  <h3>FACULTAD DE INGENIERÍA</h3>
+  <h4>Escuela Profesional de Ingeniería de Sistemas</h4>
+  <br><br>
+  <p><b>“Modelo predictivo basado en Machine Learning para la gestión de inventario de medicamentos en la Clínica La Luz, 2026”</b></p>
+  <br>
+  <p><b>Curso:</b><br>Construcción de Software I</p>
+  <p><b>Docente:</b><br>Mag. Ricardo Eduardo Valcárcel Alvarado</p>
+  <p><b>Integrantes:</b><br>
+  Salas Jiménez, Walter Emmanuel (2022073896)<br>
+  Vargas Gutierrez, Angel Jose (2020066922)</p>
+  <br>
+  <p><b>Tacna – Perú<br>2026 - I</b></p>
+</div>
+
+<hr>
+
+<h2 class="center">Diccionario de Datos - Sistema Web (SWIPRE-MED)</h2>
+<p><b>Gestión de Configuración de Software</b><br>
+<b>Versión:</b> 1.0<br>
+<b>Fecha:</b> Junio 2026<br>
+<b>Base de Datos:</b> mopgimed (MySQL)</p>
+
+<hr>
+
+<h2>📋 Índice</h2>
+<ol>
+  <li>Introducción</li>
+  <li>Módulo de Autenticación y Usuarios</li>
+  <li>Módulo de Inventario de Medicamentos</li>
+  <li>Módulo de Analítica y Predicciones (Machine Learning)</li>
+  <li>Módulo de Notificaciones y Alertas</li>
+  <li>Módulo de Auditoría</li>
+  <li>Relaciones entre Tablas</li>
+  <li>Índices y Optimizaciones</li>
+</ol>
+
+<h2>1. Introducción</h2>
+<p>Este diccionario de datos documenta la estructura completa de la base de datos <b>mopgimed</b> del sistema SWIPRE-MED (Sistema Web de Inventario Predictivo de Medicamentos). La base de datos está implementada en MySQL.</p>
+<p><b>Convenciones</b><br>
+<b>PK:</b> Clave Primaria<br>
+<b>FK:</b> Clave Foránea<br>
+<b>NN:</b> No Nulo (NOT NULL)<br>
+<b>ID:</b> Auto-incremental (AUTO_INCREMENT)<br>
+<b>DF:</b> Valor por Defecto<br>
+<b>UQ:</b> Unique Constraint</p>
+
+<p><b>Valores de Estado Comunes</b><br>
+<b>Estado Usuario:</b> Activo, Inactivo<br>
+<b>Estado Medicamento:</b> Normal, Bajo, Crítico</p>
+
+<h2>2. Módulo de Autenticación y Usuarios</h2>
+
+<h3>Tabla: users</h3>
+<p><b>Propósito:</b> Almacena la información de los usuarios del sistema, incluyendo sus credenciales, roles y estado de acceso.</p>
+<table>
+  <tr>
+    <th>Campo</th>
+    <th>Tipo</th>
+    <th>Restricciones</th>
+    <th>Descripción</th>
+  </tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único del usuario</td></tr>
+  <tr><td>username</td><td>varchar(50)</td><td>NN, UQ</td><td>Nombre de usuario para login</td></tr>
+  <tr><td>password</td><td>varchar(100)</td><td>NN</td><td>Contraseña cifrada del usuario</td></tr>
+  <tr><td>role</td><td>varchar(20)</td><td>NN</td><td>Identificador interno del rol (admin, farmacia, jefatura, almacen, logistica)</td></tr>
+  <tr><td>name</td><td>varchar(100)</td><td>NN</td><td>Nombre completo del usuario</td></tr>
+  <tr><td>role_label</td><td>varchar(50)</td><td>NN</td><td>Etiqueta visible del rol (Administrador, Farmacia, etc.)</td></tr>
+  <tr><td>email</td><td>varchar(100)</td><td>NULL</td><td>Correo electrónico del usuario</td></tr>
+  <tr><td>estado</td><td>varchar(20)</td><td>DF='Activo'</td><td>Estado de la cuenta: Activo, Inactivo</td></tr>
+  <tr><td>created_at</td><td>date</td><td>NULL</td><td>Fecha de creación de la cuenta</td></tr>
+</table>
+<p><b>Índices:</b><br>PK: id (Clustered)<br>UQ: username (Unique)</p>
+
+
+<h2>3. Módulo de Inventario de Medicamentos</h2>
+
+<h3>Tabla: medicamentos</h3>
+<p><b>Propósito:</b> Gestiona el catálogo de medicamentos, control de lotes, precios y niveles de stock.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único del medicamento</td></tr>
+  <tr><td>codigo</td><td>varchar(20)</td><td>NN, UQ</td><td>Código único del medicamento (ej: FARM-ANL001)</td></tr>
+  <tr><td>nombre</td><td>varchar(200)</td><td>NN</td><td>Nombre comercial o genérico del medicamento</td></tr>
+  <tr><td>laboratorio</td><td>varchar(100)</td><td>NULL</td><td>Laboratorio fabricante</td></tr>
+  <tr><td>lote</td><td>varchar(50)</td><td>NULL</td><td>Número de lote en inventario</td></tr>
+  <tr><td>stock</td><td>int</td><td>DF=0</td><td>Cantidad de unidades disponibles</td></tr>
+  <tr><td>stock_min</td><td>int</td><td>DF=0</td><td>Nivel de stock mínimo de seguridad</td></tr>
+  <tr><td>costo_unit</td><td>decimal(10,2)</td><td>DF=0.00</td><td>Precio de compra unitario</td></tr>
+  <tr><td>precio_venta</td><td>decimal(10,2)</td><td>DF=0.00</td><td>Precio de venta al público</td></tr>
+  <tr><td>vencimiento</td><td>date</td><td>NULL</td><td>Fecha de vencimiento del lote</td></tr>
+  <tr><td>r_sanitario</td><td>varchar(50)</td><td>NULL</td><td>Registro sanitario</td></tr>
+  <tr><td>estado</td><td>varchar(20)</td><td>DF='Normal'</td><td>Estado del stock (Normal, Bajo, Crítico)</td></tr>
+  <tr><td>categoria</td><td>varchar(100)</td><td>NULL</td><td>Categoría terapéutica del medicamento</td></tr>
+</table>
+<p><b>Índices:</b><br>PK: id (Clustered)<br>UQ: codigo (Unique)</p>
+
+
+<h2>4. Módulo de Analítica y Predicciones (Machine Learning)</h2>
+
+<h3>Tabla: prediccion_demanda</h3>
+<p><b>Propósito:</b> Almacena los resultados del modelo de Machine Learning sobre la demanda futura de los medicamentos.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único</td></tr>
+  <tr><td>mes</td><td>varchar(10)</td><td>NULL</td><td>Mes evaluado (ej: Ene, Feb)</td></tr>
+  <tr><td>real_val</td><td>int</td><td>NULL</td><td>Valor real de demanda histórica</td></tr>
+  <tr><td>prediccion</td><td>int</td><td>NULL</td><td>Valor predicho por el modelo de ML</td></tr>
+</table>
+
+<h3>Tabla: predicciones_criticas</h3>
+<p><b>Propósito:</b> Registra los medicamentos que el modelo predictivo ha identificado con riesgo de agotamiento inminente.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único</td></tr>
+  <tr><td>nombre</td><td>varchar(200)</td><td>NULL</td><td>Nombre del medicamento en riesgo</td></tr>
+  <tr><td>stock_actual</td><td>int</td><td>NULL</td><td>Stock disponible actualmente</td></tr>
+  <tr><td>fecha_predicha</td><td>varchar(20)</td><td>NULL</td><td>Fecha en la que se predice el quiebre de stock</td></tr>
+  <tr><td>ordenar</td><td>int</td><td>NULL</td><td>Cantidad sugerida a ordenar</td></tr>
+  <tr><td>prioridad</td><td>varchar(10)</td><td>NULL</td><td>Nivel de prioridad (Alta, Media, Baja)</td></tr>
+</table>
+
+<h3>Tabla: tendencias</h3>
+<p><b>Propósito:</b> Analiza el comportamiento y fluctuación de la demanda agrupado por categorías terapéuticas.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único</td></tr>
+  <tr><td>categoria</td><td>varchar(100)</td><td>NULL</td><td>Categoría del medicamento evaluada</td></tr>
+  <tr><td>cambio</td><td>int</td><td>NULL</td><td>Porcentaje o cantidad de cambio en la demanda</td></tr>
+  <tr><td>positivo</td><td>tinyint(1)</td><td>DF=1</td><td>Indicador booleano de si el cambio es positivo (1) o negativo (0)</td></tr>
+</table>
+
+<h3>Tabla: movimientos_semana</h3>
+<p><b>Propósito:</b> Registra estadísticas de entradas y salidas de inventario agrupadas por los días de la semana.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único</td></tr>
+  <tr><td>dia</td><td>varchar(10)</td><td>NULL</td><td>Día de la semana (Lun, Mar, etc.)</td></tr>
+  <tr><td>entradas</td><td>int</td><td>DF=0</td><td>Cantidad de unidades ingresadas</td></tr>
+  <tr><td>salidas</td><td>int</td><td>DF=0</td><td>Cantidad de unidades despachadas</td></tr>
+</table>
+
+<h3>Tabla: comparativa_mensual</h3>
+<p><b>Propósito:</b> Mantiene un registro histórico del flujo financiero y de inventario mensual.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único</td></tr>
+  <tr><td>mes</td><td>varchar(10)</td><td>NULL</td><td>Mes evaluado</td></tr>
+  <tr><td>ventas</td><td>int</td><td>DF=0</td><td>Total de ventas registradas</td></tr>
+  <tr><td>compras</td><td>int</td><td>DF=0</td><td>Total de compras realizadas</td></tr>
+</table>
+
+
+<h2>5. Módulo de Notificaciones y Alertas</h2>
+
+<h3>Tabla: alertas</h3>
+<p><b>Propósito:</b> Gestiona las alertas críticas generadas automáticamente por el sistema respecto al inventario.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único de alerta</td></tr>
+  <tr><td>titulo</td><td>varchar(200)</td><td>NULL</td><td>Título de la alerta</td></tr>
+  <tr><td>descripcion</td><td>text</td><td>NULL</td><td>Detalle de la situación (stock bajo, vencimiento próximo)</td></tr>
+  <tr><td>fecha</td><td>varchar(50)</td><td>NULL</td><td>Fecha y hora de generación de la alerta</td></tr>
+  <tr><td>color</td><td>varchar(20)</td><td>NULL</td><td>Color representativo de la severidad (ej: red, yellow)</td></tr>
+</table>
+
+<h3>Tabla: notificaciones</h3>
+<p><b>Propósito:</b> Almacena la bandeja de notificaciones operativas dirigidas a los usuarios del sistema.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único de notificación</td></tr>
+  <tr><td>tipo</td><td>varchar(50)</td><td>NULL</td><td>Categoría (stock-critico, vencimiento, nuevo-lote)</td></tr>
+  <tr><td>titulo</td><td>varchar(200)</td><td>NULL</td><td>Título corto</td></tr>
+  <tr><td>descripcion</td><td>text</td><td>NULL</td><td>Contenido del mensaje</td></tr>
+  <tr><td>fecha</td><td>varchar(50)</td><td>NULL</td><td>Fecha de emisión</td></tr>
+  <tr><td>color</td><td>varchar(20)</td><td>NULL</td><td>Color de la insignia de notificación</td></tr>
+  <tr><td>leida</td><td>tinyint(1)</td><td>DF=0</td><td>Estado de visualización (1=Leída, 0=No leída)</td></tr>
+  <tr><td>prioridad</td><td>varchar(10)</td><td>DF='Low'</td><td>Nivel de urgencia (High, Medium, Low)</td></tr>
+</table>
+
+<h2>6. Módulo de Auditoría</h2>
+
+<h3>Tabla: historial_acciones</h3>
+<p><b>Propósito:</b> Bitácora de sistema (Log) para la trazabilidad de las acciones importantes ejecutadas por los usuarios.</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+  <tr><td>id</td><td>int</td><td>PK, ID, NN</td><td>Identificador único del registro</td></tr>
+  <tr><td>fecha</td><td>varchar(50)</td><td>NULL</td><td>Fecha y hora exacta de la acción</td></tr>
+  <tr><td>usuario</td><td>varchar(100)</td><td>NULL</td><td>Nombre del usuario responsable</td></tr>
+  <tr><td>accion</td><td>varchar(200)</td><td>NULL</td><td>Acción realizada (ej: 'Actualizó stock')</td></tr>
+  <tr><td>modulo</td><td>varchar(50)</td><td>NULL</td><td>Módulo donde ocurrió (Inventario, Usuarios, etc.)</td></tr>
+  <tr><td>detalle</td><td>text</td><td>NULL</td><td>Datos adicionales del cambio</td></tr>
+</table>
+
+<h2>7. Relaciones entre Tablas</h2>
+<p>Debido a la naturaleza ágil y desconectada del prototipo predictivo actual, las relaciones en base de datos están manejadas a nivel lógico en la aplicación (Capa Backend/ORM), basándose en la trazabilidad por nombre y códigos, garantizando la flexibilidad del modelo.</p>
+<ul>
+  <li><b>Historial de Acciones → Usuarios:</b> Mediante el campo <code>historial_acciones.usuario</code> mapeado a <code>users.name</code>.</li>
+  <li><b>Predicciones Críticas → Medicamentos:</b> Mediante <code>predicciones_criticas.nombre</code> mapeado a <code>medicamentos.nombre</code>.</li>
+</ul>
+
+<h2>8. Índices y Optimizaciones</h2>
+<p><b>Índices Clustered (Claves Primarias)</b><br>
+Todas las tablas poseen un índice Clustered en su clave primaria (campo <code>id</code>).</p>
+
+<p><b>Índices No Clustered Recomendados para el Entorno de Producción</b><br>
+Para optimizar consultas del modelo de Machine Learning y reportería:</p>
+<ul>
+  <li><b>users:</b> Índice sobre <code>username</code> para acelerar la autenticación.</li>
+  <li><b>medicamentos:</b> Índice en <code>codigo</code> (Unique) e índice secundario en <code>estado</code> y <code>categoria</code>.</li>
+  <li><b>historial_acciones:</b> Índice sobre <code>fecha</code> y <code>usuario</code> para auditoría ágil.</li>
+</ul>
+
+<p><b>Constraints y Validaciones de Lógica de Negocios (Aplicación)</b></p>
+<ul>
+  <li><b>Cantidades:</b> stock, stock_min, entradas, salidas, ordenar &gt;= 0.</li>
+  <li><b>Fechas:</b> vencimiento debe ser mayor a la fecha actual al momento del ingreso.</li>
+  <li><b>Precios:</b> costo_unit y precio_venta &gt;= 0.00.</li>
+</ul>
+
+<hr>
+<p class="center"><b>Fin del Diccionario de Datos</b><br>
+<b>Última Actualización:</b> Junio 2026<br>
+<b>Versión del Documento:</b> 1.0</p>
+
+</body>
+</html>

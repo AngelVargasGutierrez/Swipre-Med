@@ -1,0 +1,139 @@
+@startuml Robustez_CU004_Codigo_MOPGIMED
+
+left to right direction
+
+title "Diagrama de Robustez — CU004 (fiel al código)\nRegistrar Lote de Medicamento Existente · RF-004 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+}
+
+skinparam boundary {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+}
+
+skinparam control {
+  BorderColor        #B45309
+  BackgroundColor    #FFFBEB
+  FontColor          #78350F
+}
+
+skinparam entity {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+}
+
+skinparam package {
+  BorderColor        #CBD5E1
+  BackgroundColor    #F8FAFC
+  FontStyle          Bold
+}
+
+' ═══════════════════════════════════════════
+'  ACTOR
+' ═══════════════════════════════════════════
+actor "Personal\ndel Hospital" as ACTOR
+
+' ═══════════════════════════════════════════
+'  FRONTERA — NuevoMedicamento.jsx
+' ═══════════════════════════════════════════
+package "Frontera  —  NuevoMedicamento.jsx" as PKG_B {
+  boundary "B1 — search-card\nhandleLabChange()\nmed-search-wrap · disabled\nsi !labSelected" as B1
+  boundary "B2 — med-autocomplete-dropdown\n#med-suggestions-list\nselectSuggestion(m)" as B2
+  boundary "B3 — manual-section +\nfield-readonly\nhandleSubmit(e)" as B3
+  boundary "B4 — estado ok\nCheckCircle · setOk(true)\nonBack() tras 1800ms" as B4
+  B1 -[hidden]down-> B2
+  B2 -[hidden]down-> B3
+  B3 -[hidden]down-> B4
+}
+
+' ═══════════════════════════════════════════
+'  CONTROL — Frontend y Backend
+' ═══════════════════════════════════════════
+package "Control  —  Frontend y Backend" as PKG_C {
+  control "C1 — getMatches()\nshowSuggestions()\nnorm() · slice(0,6)" as C1
+  control "C2 — medicamentoController.js\nregistrarLote(req, res)\n+ api.registrarLote()" as C2
+  control "C3 — medicamentoModel.js\nregistrarLote(id, loteData)\ncalcEstado(newStock, stockMin)" as C3
+  control "C4 — reporteModel.js\nregistrarAccion(\n  usuario, 'Registró nuevo lote',\n  'Medicamentos', detalle\n)" as C4
+  C1 -[hidden]down-> C2
+  C2 -[hidden]down-> C3
+  C3 -[hidden]down-> C4
+}
+
+' ═══════════════════════════════════════════
+'  ENTIDAD — Datos
+' ═══════════════════════════════════════════
+package "Entidad  —  MySQL" as PKG_E {
+  entity "E1 — medicamentoModel.js\nMySQL tabla medicamentos\nfindAll() · findById()\nUPDATE stock/lote/estado" as E1
+  entity "E2 — getLaboratorios()\nSELECT DISTINCT laboratorio\nFROM medicamentos" as E2
+  entity "E3 — reporteModel.js\nMySQL historial_acciones\nINSERT fecha, usuario,\naccion, modulo, detalle" as E3
+  E1 -[hidden]down-> E2
+  E2 -[hidden]down-> E3
+}
+
+' ═══════════════════════════════════════════
+'  POSICIONAMIENTO Actor | Frontera | Control | Entidad
+' ═══════════════════════════════════════════
+ACTOR -[hidden]right-> B1
+B1    -[hidden]right-> C1
+C1    -[hidden]right-> E1
+
+B2 -[hidden]right-> C1
+B3 -[hidden]right-> C2
+C2 -[hidden]right-> C3
+C3 -[hidden]right-> E1
+B4 -[hidden]right-> C4
+C4 -[hidden]right-> E3
+
+' ═══════════════════════════════════════════
+'  FLUJO (pasos 1-20)
+' ═══════════════════════════════════════════
+ACTOR --> B1 : 1. Medicamentos.jsx → onNuevo\nrender NuevoMedicamento
+B1 --> E2 : 2. api.getLaboratorios()\nGET /api/laboratorios
+B1 --> E1 : 3. api.getMedicamentos()\nsetExistentes(meds)
+
+ACTOR --> B1 : 4. handleLabChange\nsetLabSelected
+ACTOR --> B1 : 5. handleMedSearch(val)
+
+B1 --> C1 : 6. getMatches(val)
+C1 --> E1 : 7. filter state existentes[]\nnorm(lab)===labSelected\n&& nombre.includes(q)
+C1 --> B2 : 8. showSuggestions(matches)
+B2 --> ACTOR : 9. selectSuggestion(m)
+
+B1 --> B3 : 10. setMedSelected · readonly fields
+ACTOR --> B3 : 11. setField(lote, vencimiento...)
+ACTOR --> B3 : 12. handleSubmit(e)
+
+B3 --> C2 : 13. api.registrarLote(id, body)\nPOST /api/medicamentos/lote/:id
+
+alt validación cliente falla
+  B3 --> ACTOR : 14a. alert()\nno envía al servidor
+
+else OK
+  C2 --> C3 : 14b. medicamentoModel\n.registrarLote(id, loteData)
+  C3 --> E1 : 15. findById(id)\nSELECT FROM medicamentos WHERE id=?
+  C3 --> C3 : 16. newStock = existing.stock + stockInicial\ncalcEstado(newStock, stockMin)
+  C3 --> E1 : UPDATE medicamentos SET\nlote, stock, stock_min, estado...\nWHERE id=?
+  C2 --> C4 : 17. registrarAccion(\n  usuario, 'Registró nuevo lote',\n  'Medicamentos', detalle\n)
+  C4 --> E3 : 18. INSERT historial_acciones
+  C2 --> B4 : 19. res.json(actualizado)\nsetOk(true)
+  B4 --> ACTOR : 20. CheckCircle visible\nonBack() tras 1800ms
+end
+
+@enduml

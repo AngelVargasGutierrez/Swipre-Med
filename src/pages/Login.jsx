@@ -85,6 +85,8 @@ export default function Login() {
               ['Admin',    'admin / admin123'],
               ['Farmacia', 'farmacia / farmacia123'],
               ['Jefatura', 'jefatura / jefatura123'],
+              ['Almacén',  'almacen / almacen123'],
+              ['Logística','logistica / logistica123'],
             ].map(([role, cred]) => (
               <div key={role} className="credential-row">
                 <span className="credential-role">{role}:</span>

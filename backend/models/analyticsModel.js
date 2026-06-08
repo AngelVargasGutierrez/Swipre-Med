@@ -2,7 +2,7 @@ const pool = require('../db/connection');
 
 async function getPrediccionDemanda() {
   const [rows] = await pool.execute(
-    'SELECT mes, real_val AS real, prediccion FROM prediccion_demanda ORDER BY id'
+    'SELECT mes, real_val AS `real`, prediccion FROM prediccion_demanda ORDER BY id'
   );
   return rows.map(r => ({ ...r, real: r.real ?? null, prediccion: r.prediccion ?? null }));
 }

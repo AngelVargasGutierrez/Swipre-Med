@@ -1,0 +1,57 @@
+@startuml Secuencia_CU010_Codigo_MOPGIMED
+title "Diagrama de Secuencia — CU010 (fiel al código)\nVisualizar Semáforo de Stock · RF-010 · MOPGIMED"
+
+skinparam {
+  backgroundColor    #FFFFFF
+  shadowing          false
+  defaultFontName    Segoe UI
+  defaultFontSize    10
+  defaultFontColor   #1E293B
+  ArrowColor         #B91C1C
+  ArrowThickness     1.5
+  ArrowFontSize      9
+  ArrowFontColor     #475569
+}
+
+skinparam actor {
+  BorderColor        #B91C1C
+  BackgroundColor    #FFF1F2
+  FontColor          #7F1D1D
+  FontStyle          Bold
+  FontSize           11
+}
+
+skinparam participant {
+  BorderColor        #1D4ED8
+  BackgroundColor    #EFF6FF
+  FontColor          #1E3A8A
+  FontSize           10
+}
+
+skinparam database {
+  BorderColor        #065F46
+  BackgroundColor    #ECFDF5
+  FontColor          #064E3B
+  FontSize           10
+}
+
+actor "Usuario (Jefatura / Logística)" as User
+participant "ControlInventario.jsx\n(Frontend React)" as View
+participant "api.js\n(Servicio Frontend)" as API
+participant "inventarioController.js\n(Controlador Backend)" as Ctrl
+participant "inventarioModel.js\n(Modelo BD)" as Model
+database "MySQL\n(medicamentos)" as DB
+
+User -> View : 1. Navega a /inventario
+View -> API : 2. useEffect() dispara getInventario()
+API -> Ctrl : 3. HTTP GET /api/inventario
+Ctrl -> Model : 4. Promise.all([findAll(), getTotales()])
+Model -> DB : 5. SELECT id, codigo, stock, stock_min, estado...
+DB --> Model : 6. Retorna array de resultados
+Model --> Ctrl : 7. Retorna { medicamentos, totals }
+Ctrl -> API : 8. res.json(data)
+API --> View : 9. Devuelve { medicamentos, totals }
+View -> View : 10. setMedicamentos(data.medicamentos)\nsetTotals(data.totals)
+View -> View : 11. map() y filter() por estado\n('Crítico', 'Bajo', 'Normal')
+View --> User : 12. Renderiza UI (Tarjetas stats y tabla con badges)
+@enduml
