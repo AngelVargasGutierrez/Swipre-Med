@@ -1,7 +1,9 @@
 const dashboardModel = require('../models/dashboardModel');
+const alertaService = require('../services/alertaService');
 
 async function getDashboard(req, res) {
   try {
+    await alertaService.generarAlertas(); // Generar alertas frescas de semáforos
     const [stats, stockPorCategoria, estadoStock, movimientosSemana, top5Valor, alertas] = await Promise.all([
       dashboardModel.getStats(),
       dashboardModel.getStockPorCategoria(),

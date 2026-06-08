@@ -42,7 +42,7 @@ async function getTop5Valor() {
 
 async function getAlertas() {
   const [rows] = await pool.execute(
-    'SELECT titulo, descripcion, fecha, color FROM alertas ORDER BY id DESC LIMIT 5'
+    "SELECT titulo, descripcion, fecha, color FROM notificaciones WHERE leida = 0 AND prioridad = 'High' ORDER BY id DESC LIMIT 5"
   );
   return rows;
 }

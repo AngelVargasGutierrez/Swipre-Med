@@ -1,7 +1,9 @@
 const notificacionModel = require('../models/notificacionModel');
+const alertaService = require('../services/alertaService');
 
 async function getAll(req, res) {
   try {
+    await alertaService.generarAlertas(); // RF-011: Generar alertas automáticas
     res.json(await notificacionModel.findAll());
   } catch (err) { res.status(500).json({ error: err.message }); }
 }
