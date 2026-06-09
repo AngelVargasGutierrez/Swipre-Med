@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, TrendingUp, RotateCcw, Download } from 'lucide-react';
 import { api } from '../services/api';
 import Loader from '../components/Loader';
+import * as XLSX from 'xlsx';
 
 const TIPOS = [
   { key:'general',    label:'Reporte General',    icon:FileText,   desc:'Inventario completo con filtros'  },
@@ -22,6 +23,40 @@ export default function Reportes() {
       .then(([res, meds]) => { setResumen(res); setMedicamentos(meds); })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleExportExcel = () => {
+    if (!medicamentos || medicamentos.length === 0) return;
+
+    // Preparamos los datos para Excel
+    const dataToExport = medicamentos.map(m => ({
+      'Código': m.codigo,
+      'Medicamento': m.nombre,
+      'Categoría': m.categoria || 'General',
+      'Laboratorio': m.laboratorio || 'N/A',
+      'Lote': m.lote || '-',
+      'Stock Actual': m.stock,
+      'Stock Mínimo': m.stockMin || 10,
+      'Estado Stock': m.estado,
+      'Costo Unitario ($)': m.costoUnit,
+      'Precio Venta ($)': m.precioVenta,
+      'Valor Inventario ($)': (m.stock * m.costoUnit).toFixed(2),
+      'Vencimiento': m.vencimiento ? new Date(m.vencimiento).toLocaleDateString() : 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+    
+    // Auto-ajustar ancho de columnas
+    const colWidths = [
+      { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, 
+      { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, 
+      { wch: 20 }, { wch: 15 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    XLSX.writeFile(workbook, `Reporte_MOPGIMED_${fechaDesde}_al_${fechaHasta}.xlsx`);
+  };
 
   if (loading) return <Loader />;
 
@@ -81,7 +116,7 @@ export default function Reportes() {
               style={{ width:'auto' }}
             />
           </div>
-          <button className="btn btn-green" style={{ marginBottom:0 }}>
+          <button className="btn btn-green" style={{ marginBottom:0 }} onClick={handleExportExcel}>
             <Download size={16} /> Exportar a Excel
           </button>
         </div>
