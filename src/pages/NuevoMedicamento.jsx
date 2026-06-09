@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, CheckCircle, FlaskConical } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -10,8 +11,10 @@ const LOTE_EMPTY = {
 
 const norm = (s) => (s || '').trim().toLowerCase();
 
-export default function NuevoMedicamento({ onBack }) {
+export default function NuevoMedicamento() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const onBack = () => navigate(-1);
 
   const [laboratorios, setLaboratorios] = useState([]);
   const [existentes,   setExistentes]   = useState([]);

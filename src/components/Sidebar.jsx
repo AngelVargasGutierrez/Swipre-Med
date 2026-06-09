@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Pill, ClipboardList, Bell,
   LogOut, AlertTriangle, FileText, BarChart2, Users,
@@ -14,8 +15,12 @@ const ALL_ITEMS = [
   { key:'usuarios',       label:'Usuarios',            icon:Users           },
 ];
 
-export default function Sidebar({ currentPage, onNavigate }) {
+export default function Sidebar() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPage = location.pathname.split('/')[1] || 'dashboard';
+
   const items = ALL_ITEMS.filter(i => user.menu.includes(i.key));
 
   return (
@@ -44,7 +49,7 @@ export default function Sidebar({ currentPage, onNavigate }) {
           <button
             key={key}
             className={`nav-item${currentPage === key ? ' active' : ''}`}
-            onClick={() => onNavigate(key)}
+            onClick={() => navigate(`/${key}`)}
           >
             <Icon size={18} />
             {label}

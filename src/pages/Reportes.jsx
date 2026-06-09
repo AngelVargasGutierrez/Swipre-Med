@@ -55,7 +55,22 @@ export default function Reportes() {
     ];
     worksheet['!cols'] = colWidths;
 
-    XLSX.writeFile(workbook, `Reporte_MOPGIMED_${fechaDesde}_al_${fechaHasta}.xlsx`);
+    // Generar buffer en vez de archivo directo para evitar bug de navegadores sin extensión
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    
+    // Crear link virtual para forzar la descarga con nombre y extensión específica
+    const filename = `Reporte_MOPGIMED_${fechaDesde}_al_${fechaHasta}.xlsx`;
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpiar DOM
+    link.parentNode.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   if (loading) return <Loader />;

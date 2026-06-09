@@ -352,7 +352,7 @@ export default function Medicamentos({ onNuevo }) {
         </div>
         <div style={{ display: 'flex', gap: '10px', marginTop: 4 }}>
           {puedeEditar && (
-            <button className="btn btn-primary" onClick={onNuevo}>
+            <button className="btn btn-primary" onClick={() => navigate('/medicamentos/nuevo')}>
               <Plus size={18} /> Nuevo Medicamento
             </button>
           )}

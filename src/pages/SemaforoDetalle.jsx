@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Box, AlertTriangle, Calendar, Search } from 'lucide-react';
 import { api } from '../services/api';
 import Loader from '../components/Loader';
 
-export default function SemaforoDetalle({ onBack, tipo }) {
+export default function SemaforoDetalle({ tipo }) {
+  const navigate = useNavigate();
+  const onBack = () => navigate(-1);
   const [medicamentos, setMedicamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

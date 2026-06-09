@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend,
@@ -22,10 +23,11 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   );
 };
 
-export default function Dashboard({ onViewSemaforo }) {
+export default function Dashboard() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.getDashboard().then(res => {
@@ -216,10 +218,7 @@ export default function Dashboard({ onViewSemaforo }) {
             <button 
               className="btn btn-primary" 
               style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: '#ef4444', borderColor: '#ef4444' }}
-              onClick={() => {
-                console.log('Navegando a semaforo-stock');
-                if (onViewSemaforo) onViewSemaforo('semaforo-stock');
-              }}
+              onClick={() => navigate('/semaforo/stock')}
             >
               <Eye size={16} /> Ver Detalles
             </button>
@@ -253,10 +252,7 @@ export default function Dashboard({ onViewSemaforo }) {
             <button 
               className="btn btn-primary" 
               style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: '#f59e0b', borderColor: '#f59e0b', color: '#fff' }}
-              onClick={() => {
-                console.log('Navegando a semaforo-vencimiento');
-                if (onViewSemaforo) onViewSemaforo('semaforo-vencimiento');
-              }}
+              onClick={() => navigate('/semaforo/vencimiento')}
             >
               <Eye size={16} /> Ver Detalles
             </button>
@@ -318,7 +314,7 @@ export default function Dashboard({ onViewSemaforo }) {
                   className="btn btn-primary" 
                   onClick={() => {
                     setShowPopup(false);
-                    onViewSemaforo('semaforo-stock');
+                    navigate('/semaforo/stock');
                   }}
                   style={{ flex: 1, padding: '12px', background: '#ef4444', borderColor: '#ef4444' }}
                 >

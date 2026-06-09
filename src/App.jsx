@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -14,41 +15,40 @@ import Sidebar from './components/Sidebar';
 
 function AppContent() {
   const { user } = useAuth();
-  const [page, setPage] = useState('dashboard');
-
-  useEffect(() => {
-    if (!user) return;
-    const basePage = page === 'nuevo-medicamento' ? 'medicamentos' : (page.startsWith('semaforo') ? 'dashboard' : page);
-    if (!user.menu.includes(basePage)) {
-      setPage(user.menu[0]);
-    }
-  }, [user, page]);
+  const location = useLocation();
 
   if (!user) return <Login />;
 
-  const navPage = page === 'nuevo-medicamento' ? 'medicamentos' : (page.startsWith('semaforo') ? 'dashboard' : page);
+  // Proteger rutas basado en el rol
+  const currentPath = location.pathname.split('/')[1] || 'dashboard';
+  const isSemaforo = location.pathname.startsWith('/semaforo');
+  const isNuevoMed = location.pathname === '/medicamentos/nuevo';
+  
+  const basePage = isNuevoMed ? 'medicamentos' : (isSemaforo ? 'dashboard' : currentPath);
+  
+  if (basePage !== '' && !user.menu.includes(basePage)) {
+    return <Navigate to={`/${user.menu[0]}`} replace />;
+  }
 
-  const renderPage = () => {
-    switch (page) {
-      case 'dashboard':         return <Dashboard onViewSemaforo={setPage} />;
-      case 'semaforo-stock':    return <SemaforoDetalle tipo="stock" onBack={() => setPage('dashboard')} />;
-      case 'semaforo-vencimiento': return <SemaforoDetalle tipo="vencimiento" onBack={() => setPage('dashboard')} />;
-      case 'medicamentos':      return <Medicamentos onNuevo={() => setPage('nuevo-medicamento')} />;
-      case 'nuevo-medicamento': return <NuevoMedicamento onBack={() => setPage('medicamentos')} />;
-      case 'inventario':        return <ControlInventario />;
-
-      case 'reportes':          return <Reportes />;
-      case 'analytics':         return <Analytics />;
-      case 'usuarios':          return <Usuarios />;
-      default:                  return <Dashboard />;
-    }
-  };
+  const navPage = isNuevoMed ? 'medicamentos' : (isSemaforo ? 'dashboard' : currentPath);
 
   return (
     <div className="app-layout">
-      <Sidebar currentPage={navPage} onNavigate={setPage} />
+      <Sidebar currentPage={navPage || 'dashboard'} />
       <main className="main-content">
-        {renderPage()}
+        <Routes>
+          <Route path="/" element={<Navigate to={`/${user.menu[0]}`} replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/semaforo/stock" element={<SemaforoDetalle tipo="stock" />} />
+          <Route path="/semaforo/vencimiento" element={<SemaforoDetalle tipo="vencimiento" />} />
+          <Route path="/medicamentos" element={<Medicamentos />} />
+          <Route path="/medicamentos/nuevo" element={<NuevoMedicamento />} />
+          <Route path="/inventario" element={<ControlInventario />} />
+          <Route path="/reportes" element={<Reportes />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/usuarios" element={<Usuarios />} />
+          <Route path="*" element={<Navigate to={`/${user.menu[0]}`} replace />} />
+        </Routes>
       </main>
     </div>
   );
@@ -56,8 +56,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
