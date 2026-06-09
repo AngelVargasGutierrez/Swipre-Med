@@ -159,7 +159,9 @@ async function run() {
     ('admin',   'admin123',   'admin',   'Juan Pérez',       'Administrador','juan.perez@mopgimed.com',      'Activo',  '2024-01-14'),
     ('farmacia','farmacia123','farmacia','María González',   'Farmacia',     'maria.gonzalez@mopgimed.com',  'Activo',  '2024-02-09'),
     ('jefatura','jefatura123','jefatura','Carlos Rodríguez','Jefatura',     'carlos.rodriguez@mopgimed.com','Activo',  '2024-01-19'),
-    ('ana.lopez','ana123',    'farmacia','Ana López',        'Farmacia',     'ana.lopez@mopgimed.com',       'Inactivo','2023-11-30')
+    ('ana.lopez','ana123',    'farmacia','Ana López',        'Farmacia',     'ana.lopez@mopgimed.com',       'Inactivo','2023-11-30'),
+    ('almacen', 'almacen123', 'almacen', 'Pedro Almacén',    'Almacén',      'almacen@mopgimed.com',         'Activo',  '2024-05-10'),
+    ('logistica','logistica123','logistica','Ana Logística','Logística',    'logistica@mopgimed.com',       'Activo',  '2024-05-11')
   `);
 
   /* ── Insertar MEDICAMENTOS ───────────────────────── */
