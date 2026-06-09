@@ -13,13 +13,15 @@ import {
   Eye,
   Box,
   FileSpreadsheet,
-  Filter
+  Filter,
+  Edit2
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import Loader from '../components/Loader';
 import ModalDetalleMedicamento from '../components/ModalDetalleMedicamento';
+import ModalEditarMedicamento from '../components/ModalEditarMedicamento';
 
 function hoyMasMeses(meses) {
   const d = new Date();
@@ -100,7 +102,7 @@ function etiquetaMotor(motor) {
 
 export default function Medicamentos({ onNuevo }) {
   const { user } = useAuth();
-  const esFarmacia = user?.role === 'farmacia';
+  const puedeEditar = ['admin', 'almacen', 'logistica'].includes(user?.role);
   
   const [loading, setLoading] = useState(true);
   const [medicamentos, setMedicamentos] = useState([]);
@@ -136,6 +138,8 @@ export default function Medicamentos({ onNuevo }) {
 
   // Estado para el modal de detalles
   const [medicamentoDetalle, setMedicamentoDetalle] = useState(null);
+  const [medicamentoEditar, setMedicamentoEditar] = useState(null);
+  const [toastMsg, setToastMsg] = useState('');
 
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
@@ -199,10 +203,10 @@ export default function Medicamentos({ onNuevo }) {
   }, []);
 
   useEffect(() => {
-    if (esFarmacia) return;
+    if (!puedeEditar) return;
     const t = setTimeout(() => cargarVariantes(search, labFilter, medicamentos), 350);
     return () => clearTimeout(t);
-  }, [search, labFilter, medicamentos, cargarVariantes, esFarmacia]);
+  }, [search, labFilter, medicamentos, cargarVariantes, puedeEditar]);
 
   useEffect(() => {
     function onClickOutside(e) {
@@ -300,12 +304,14 @@ export default function Medicamentos({ onNuevo }) {
     setGuardando(true);
     try {
       if (seleccion?.medicamentoId) {
-        await api.registrarLote(seleccion.medicamentoId, payload);
+        await api.registrarLote(seleccion.medicamentoId, { ...payload, role: user.role, usuario: user.name });
         setMsgOk('Lote registrado correctamente en el inventario.');
       } else {
         await api.createMedicamento({
           codigo: `FARM-${Date.now()}`,
           ...payload,
+          role: user.role,
+          usuario: user.name,
         });
         setMsgOk('Medicamento registrado correctamente en la base de datos.');
       }
@@ -345,7 +351,7 @@ export default function Medicamentos({ onNuevo }) {
           <p className="page-subtitle">Búsqueda inteligente y registro de medicamentos con IA</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', marginTop: 4 }}>
-          {!esFarmacia && (
+          {puedeEditar && (
             <button className="btn btn-primary" onClick={onNuevo}>
               <Plus size={18} /> Nuevo Medicamento
             </button>
@@ -353,7 +359,7 @@ export default function Medicamentos({ onNuevo }) {
         </div>
       </div>
 
-      {!esFarmacia && (
+      {puedeEditar && (
       <div className="ai-card">
         <div className="ai-card-title">
           <Sparkles size={18} />
@@ -529,7 +535,7 @@ export default function Medicamentos({ onNuevo }) {
 
       <div className="card" style={{ marginTop: '24px', padding: '16px' }}>
         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          {esFarmacia && (
+          {!puedeEditar && (
             <div style={{ flex: '1 1 300px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <Search size={16} color="#64748b" />
@@ -730,14 +736,26 @@ export default function Medicamentos({ onNuevo }) {
                       </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <button 
-                        className="btn-icon" 
-                        title="Consultar detalles y precio" 
-                        onClick={() => setMedicamentoDetalle(m)}
-                        style={{ color: '#3b82f6', background: '#eff6ff', border: 'none', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        <Eye size={18} />
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                        <button 
+                          className="btn-icon" 
+                          title="Consultar detalles y precio" 
+                          onClick={() => setMedicamentoDetalle(m)}
+                          style={{ color: '#3b82f6', background: '#eff6ff', border: 'none', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <Eye size={18} />
+                        </button>
+                        {puedeEditar && (
+                          <button 
+                            className="btn-icon" 
+                            title="Editar medicamento" 
+                            onClick={() => setMedicamentoEditar(m)}
+                            style={{ color: '#f59e0b', background: '#fffbeb', border: 'none', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -752,6 +770,32 @@ export default function Medicamentos({ onNuevo }) {
         medicamento={medicamentoDetalle} 
         onClose={() => setMedicamentoDetalle(null)} 
       />
+
+      {/* Modal de Edición */}
+      <ModalEditarMedicamento
+        medicamento={medicamentoEditar}
+        onClose={() => setMedicamentoEditar(null)}
+        onUpdated={() => {
+          recargar();
+          setMedicamentoEditar(null);
+          setToastMsg('¡Medicamento guardado exitosamente!');
+          setTimeout(() => setToastMsg(''), 3000);
+        }}
+      />
+
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px',
+          background: '#10b981', color: '#fff', padding: '16px 24px',
+          borderRadius: '8px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
+          zIndex: 9999, display: 'flex', alignItems: 'center', gap: '8px',
+          fontWeight: '500', transition: 'all 0.3s ease-in-out'
+        }}>
+          <CheckCircle2 size={20} />
+          {toastMsg}
+        </div>
+      )}
     </>
   );
 }

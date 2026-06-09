@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend,
 } from 'recharts';
-import { Package, AlertTriangle, Calendar, DollarSign, Activity, Box, TrendingDown, Clock } from 'lucide-react';
+import { Package, AlertTriangle, Calendar, DollarSign, Activity, Box, TrendingDown, Clock, Eye, X } from 'lucide-react';
 import { api } from '../services/api';
 import Loader from '../components/Loader';
 
@@ -22,12 +22,20 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   );
 };
 
-export default function Dashboard() {
+export default function Dashboard({ onViewSemaforo }) {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
-    api.getDashboard().then(setData).finally(() => setLoading(false));
+    api.getDashboard().then(res => {
+      setData(res);
+      const hasCriticalAlerts = res.alertas && res.alertas.length > 0;
+      if (hasCriticalAlerts && !sessionStorage.getItem('popups_vistos_v3')) {
+        setShowPopup(true);
+        sessionStorage.setItem('popups_vistos_v3', 'true');
+      }
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Loader />;
@@ -178,23 +186,82 @@ export default function Dashboard() {
 
       {/* ── Alerts + Quick stats ───────────────────────────── */}
       <div className="bottom-grid" style={{ marginTop: 24 }}>
-        <div className="chart-card">
-          <div className="section-header" style={{ marginBottom:16 }}>
-            <div className="chart-title" style={{ margin:0 }}>Alertas Críticas</div>
-            <span className="badge-count">{alertas.length} Nuevas</span>
-          </div>
-          {alertas.map((a, i) => (
-            <div key={i} className={`alert-item ${a.color}`}>
-              <div style={{ paddingTop:2 }}>
-                <AlertTriangle size={18} color={a.color === 'red' ? '#ef4444' : '#f59e0b'} />
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          {/* Semáforo de Stock */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', background: '#fef2f2' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={20} color="#ef4444" />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#991b1b', fontWeight: 'bold' }}>Semáforo de Stock</h3>
               </div>
-              <div>
-                <div className="alert-title">{a.titulo}</div>
-                <div className="alert-desc">{a.descripcion}</div>
-                <div className="alert-date">{a.fecha}</div>
-              </div>
+              <span className="badge-count" style={{ background: '#ef4444', color: '#fff' }}>
+                {alertas.filter(a => a.color === 'red' || a.titulo.includes('Stock')).length}
+              </span>
             </div>
-          ))}
+            <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#7f1d1d' }}>Medicamentos con stock crítico o bajo.</p>
+            
+            <div style={{ marginBottom: '16px' }}>
+              {alertas.filter(a => a.color === 'red' || a.titulo.includes('Stock')).slice(0, 3).map((a, i) => (
+                <div key={i} className={`alert-item ${a.color}`} style={{ marginBottom: '8px', padding: '8px', background: '#fff', borderRadius: '8px' }}>
+                  <div style={{ paddingTop:2 }}><AlertTriangle size={16} color="#ef4444" /></div>
+                  <div>
+                    <div className="alert-title" style={{ fontSize: '0.85rem' }}>{a.titulo}</div>
+                    <div className="alert-desc" style={{ fontSize: '0.75rem' }}>{a.descripcion}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              className="btn btn-primary" 
+              style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: '#ef4444', borderColor: '#ef4444' }}
+              onClick={() => {
+                console.log('Navegando a semaforo-stock');
+                if (onViewSemaforo) onViewSemaforo('semaforo-stock');
+              }}
+            >
+              <Eye size={16} /> Ver Detalles
+            </button>
+          </div>
+
+          {/* Semáforo de Vencimientos */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', background: '#fffbeb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={20} color="#f59e0b" />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#b45309', fontWeight: 'bold' }}>Semáforo de Vencimientos</h3>
+              </div>
+              <span className="badge-count" style={{ background: '#f59e0b', color: '#fff' }}>
+                {alertas.filter(a => a.color !== 'red' && a.titulo.includes('Vencimiento')).length}
+              </span>
+            </div>
+            <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#92400e' }}>Medicamentos próximos a vencer o vencidos.</p>
+            
+            <div style={{ marginBottom: '16px' }}>
+              {alertas.filter(a => a.color !== 'red' && a.titulo.includes('Vencimiento')).slice(0, 3).map((a, i) => (
+                <div key={i} className={`alert-item ${a.color}`} style={{ marginBottom: '8px', padding: '8px', background: '#fff', borderRadius: '8px' }}>
+                  <div style={{ paddingTop:2 }}><Calendar size={16} color="#f59e0b" /></div>
+                  <div>
+                    <div className="alert-title" style={{ fontSize: '0.85rem' }}>{a.titulo}</div>
+                    <div className="alert-desc" style={{ fontSize: '0.75rem' }}>{a.descripcion}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              className="btn btn-primary" 
+              style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: '#f59e0b', borderColor: '#f59e0b', color: '#fff' }}
+              onClick={() => {
+                console.log('Navegando a semaforo-vencimiento');
+                if (onViewSemaforo) onViewSemaforo('semaforo-vencimiento');
+              }}
+            >
+              <Eye size={16} /> Ver Detalles
+            </button>
+          </div>
+
         </div>
 
         <div className="chart-card">
@@ -212,6 +279,56 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Pop-up de Alertas Críticas (1 sola vez por sesión) */}
+      {showPopup && (
+        <div className="modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9999,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          padding: '1rem'
+        }}>
+          <div className="modal-content" style={{
+            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '450px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden'
+          }}>
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <div style={{ 
+                width: '64px', height: '64px', borderRadius: '50%', background: '#fee2e2', 
+                display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 16px auto'
+              }}>
+                <AlertTriangle size={32} color="#ef4444" />
+              </div>
+              <h2 style={{ margin: '0 0 12px 0', fontSize: '1.5rem', color: '#0f172a', fontWeight: 'bold' }}>
+                ¡Atención Requerida!
+              </h2>
+              <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: '1rem', lineHeight: '1.5' }}>
+                Se han detectado <strong>{alertas.length} alertas críticas</strong> en el inventario (stock bajo o medicamentos próximos a vencer). 
+                Por favor, revise los semáforos.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowPopup(false)}
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  <X size={16} style={{ marginRight: '8px' }} /> Ok, cerrar
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => {
+                    setShowPopup(false);
+                    onViewSemaforo('semaforo-stock');
+                  }}
+                  style={{ flex: 1, padding: '12px', background: '#ef4444', borderColor: '#ef4444' }}
+                >
+                  <Eye size={16} style={{ marginRight: '8px' }} /> Ver Medicamentos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

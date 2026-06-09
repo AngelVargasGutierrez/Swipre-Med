@@ -46,6 +46,10 @@ async function getOne(req, res) {
 
 async function create(req, res) {
   try {
+    const { role } = req.body;
+    if (!['admin', 'almacen', 'logistica'].includes(role)) {
+      return res.status(403).json({ error: 'No tienes permiso para registrar medicamentos.' });
+    }
     const nuevo = await medicamentoModel.create(req.body);
     res.status(201).json(nuevo);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -53,6 +57,10 @@ async function create(req, res) {
 
 async function update(req, res) {
   try {
+    const { role } = req.body;
+    if (!['admin', 'almacen', 'logistica'].includes(role)) {
+      return res.status(403).json({ error: 'No tienes permiso para modificar medicamentos.' });
+    }
     const actualizado = await medicamentoModel.update(req.params.id, req.body);
     res.json(actualizado);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -60,6 +68,10 @@ async function update(req, res) {
 
 async function remove(req, res) {
   try {
+    const role = req.headers['x-user-role'] || req.body.role;
+    if (!['admin', 'almacen', 'logistica'].includes(role)) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar medicamentos.' });
+    }
     await medicamentoModel.remove(req.params.id);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -288,7 +300,10 @@ async function buscarConIA(req, res) {
 
 async function registrarLote(req, res) {
   try {
-    const { usuario, ...loteData } = req.body;
+    const { usuario, role, ...loteData } = req.body;
+    if (!['admin', 'almacen', 'logistica'].includes(role)) {
+      return res.status(403).json({ error: 'No tienes permiso para ingresar stock.' });
+    }
     const actualizado = await medicamentoModel.registrarLote(req.params.id, loteData);
     await reporteModel.registrarAccion(
       usuario || 'Sistema',

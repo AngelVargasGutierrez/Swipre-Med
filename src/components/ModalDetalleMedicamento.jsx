@@ -5,7 +5,7 @@ export default function ModalDetalleMedicamento({ medicamento, onClose }) {
   if (!medicamento) return null;
 
   // Lógica del semáforo para el stock
-  const isBajo = medicamento.stock <= medicamento.stockMin && medicamento.stock > 0;
+  const isBajo = medicamento.stock <= (medicamento.stockMin || 10) && medicamento.stock > 0;
   const isCritico = medicamento.stock === 0;
 
   let stockColor = '#10b981'; // Verde (Normal)
