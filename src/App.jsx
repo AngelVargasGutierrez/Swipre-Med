@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Medicamentos from './pages/Medicamentos';
 import NuevoMedicamento from './pages/NuevoMedicamento';
 import ControlInventario from './pages/ControlInventario';
+import SemaforoDetalle from './pages/SemaforoDetalle';
 
 import Reportes from './pages/Reportes';
 import Analytics from './pages/Analytics';
@@ -17,7 +18,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!user) return;
-    const basePage = page === 'nuevo-medicamento' ? 'medicamentos' : page;
+    const basePage = page === 'nuevo-medicamento' ? 'medicamentos' : (page.startsWith('semaforo') ? 'dashboard' : page);
     if (!user.menu.includes(basePage)) {
       setPage(user.menu[0]);
     }
@@ -25,11 +26,13 @@ function AppContent() {
 
   if (!user) return <Login />;
 
-  const navPage = page === 'nuevo-medicamento' ? 'medicamentos' : page;
+  const navPage = page === 'nuevo-medicamento' ? 'medicamentos' : (page.startsWith('semaforo') ? 'dashboard' : page);
 
   const renderPage = () => {
     switch (page) {
-      case 'dashboard':         return <Dashboard />;
+      case 'dashboard':         return <Dashboard onViewSemaforo={setPage} />;
+      case 'semaforo-stock':    return <SemaforoDetalle tipo="stock" onBack={() => setPage('dashboard')} />;
+      case 'semaforo-vencimiento': return <SemaforoDetalle tipo="vencimiento" onBack={() => setPage('dashboard')} />;
       case 'medicamentos':      return <Medicamentos onNuevo={() => setPage('nuevo-medicamento')} />;
       case 'nuevo-medicamento': return <NuevoMedicamento onBack={() => setPage('medicamentos')} />;
       case 'inventario':        return <ControlInventario />;
