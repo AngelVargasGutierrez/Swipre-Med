@@ -7,7 +7,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 
-const cfg = {
+const cfg = process.env.JAWSDB_URL || {
   host:     process.env.DB_HOST || 'localhost',
   port:     parseInt(process.env.DB_PORT) || 3306,
   user:     process.env.DB_USER || 'root',
@@ -19,10 +19,14 @@ async function run() {
   const conn = await mysql.createConnection(cfg);
   console.log('✅ Conectado a MySQL');
 
-  /* ── Crear base de datos ──────────────────────────── */
-  await conn.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-  await conn.query(`USE \`${DB}\``);
-  console.log(`✅ Base de datos "${DB}" lista`);
+  /* ── Crear base de datos (Omitir en Heroku) ──────────────── */
+  if (!process.env.JAWSDB_URL) {
+    await conn.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await conn.query(`USE \`${DB}\``);
+    console.log(`✅ Base de datos "${DB}" lista`);
+  } else {
+    console.log(`✅ Usando base de datos provista por JawsDB`);
+  }
 
   /* ── Crear tablas ─────────────────────────────────── */
   await conn.execute(`
