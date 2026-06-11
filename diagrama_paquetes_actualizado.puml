@@ -1,0 +1,244 @@
+@startuml diagrama_paquetes_actualizado
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam arrowColor #2C3E50
+skinparam arrowThickness 2
+
+' ─── Colores por paquete ───────────────────────────────
+skinparam package {
+  BackgroundColor<<Heroku>>       #F0FFF4
+  BorderColor<<Heroku>>           #27AE60
+  FontColor<<Heroku>>             #1E8449
+  FontStyle<<Heroku>>             bold
+
+  BackgroundColor<<Sistema>>      #EBF5FB
+  BorderColor<<Sistema>>          #2980B9
+  FontColor<<Sistema>>            #1A5276
+  FontStyle<<Sistema>>            bold
+
+  BackgroundColor<<Backend>>      #FEF9E7
+  BorderColor<<Backend>>          #D4AC0D
+  FontColor<<Backend>>            #7D6608
+
+  BackgroundColor<<Frontend>>     #F9EBEA
+  BorderColor<<Frontend>>         #C0392B
+  FontColor<<Frontend>>           #922B21
+
+  BackgroundColor<<DB>>           #F5EEF8
+  BorderColor<<DB>>               #8E44AD
+  FontColor<<DB>>                 #6C3483
+  FontStyle<<DB>>                 bold
+
+  BackgroundColor<<IAExterno>>    #FFF3E0
+  BorderColor<<IAExterno>>        #E67E22
+  FontColor<<IAExterno>>          #BA4A00
+  FontStyle<<IAExterno>>          bold
+
+  BackgroundColor<<Interno>>      #FDFEFE
+  BorderColor<<Interno>>          #AAB7B8
+  FontColor<<Interno>>            #2C3E50
+}
+
+' ═══════════════════════════════════════════════════════
+' CONTENEDOR PRINCIPAL: Servicio de Heroku
+' ═══════════════════════════════════════════════════════
+package "☁  Servicio de Heroku" <<Heroku>> {
+
+  ' ─────────────────────────────────────────────────────
+  ' SISTEMA MOPGIMED
+  ' ─────────────────────────────────────────────────────
+  package "Sistema MOPGIMED" <<Sistema>> {
+
+    ' ══════════════════════════
+    ' BACKEND (Node.js / Express)
+    ' ══════════════════════════
+    package "backend" <<Backend>> {
+
+      package "controllers" <<Interno>> {
+        [authController]
+        [medicamentoController]
+        [dashboardController]
+        [inventarioController]
+        [notificacionController]
+        [reporteController]
+        [analyticsController]
+        [userController]
+      }
+
+      package "models" <<Interno>> {
+        [medicamentoModel]
+        [userModel]
+        [inventarioModel]
+        [notificacionModel]
+        [reporteModel]
+        [dashboardModel]
+        [analyticsModel]
+      }
+
+      package "routes" <<Interno>> {
+        [auth.js]
+        [medicamentos.js]
+        [dashboard.js]
+        [inventario.js]
+        [notificaciones.js]
+        [reportes.js]
+        [analytics.js]
+        [laboratorios.js]
+        [users.js]
+      }
+
+      package "services" <<Interno>> {
+        [geminiService]
+        [alertaService]
+      }
+
+      package "db" <<Interno>> {
+        [connection]
+      }
+
+      package "data" <<Interno>> {
+        [catalogoFallback]
+      }
+    }
+
+    ' ══════════════════════════
+    ' FRONTEND (React / Vite)
+    ' ══════════════════════════
+    package "src  (Frontend)" <<Frontend>> {
+
+      package "pages" <<Interno>> {
+        [Login]
+        [Dashboard]
+        [Medicamentos]
+        [NuevoMedicamento]
+        [ControlInventario]
+        [Reportes]
+        [Analytics]
+        [Notificaciones]
+        [Usuarios]
+        [SemaforoDetalle]
+      }
+
+      package "components" <<Interno>> {
+        [ModalDetalleMedicamento]
+        [ModalEditarMedicamento]
+        [ModalRegistroLoteIA]
+        [Sidebar]
+        [Loader]
+      }
+
+      package "context" <<Interno>> {
+        [AuthContext]
+      }
+
+      package "services  (api)" <<Interno>> {
+        [api.js]
+      }
+
+      package "assets" <<Interno>> {
+        [imágenes / íconos]
+      }
+    }
+
+  }
+
+  ' ─────────────────────────────────────────────────────
+  ' BASE DE DATOS
+  ' ─────────────────────────────────────────────────────
+  package "Base de Datos\n(MySQL)" <<DB>> {
+    [medicamentos]
+    [users]
+    [notificaciones]
+    [historial_acciones]
+    [movimientos_semana]
+    [prediccion_demanda]
+    [comparativa_mensual]
+    [tendencias]
+    [predicciones_criticas]
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════
+' IA SERVICE — Paquete EXTERNO (Google Gemini API)
+' ═══════════════════════════════════════════════════════
+package "IA Service\n(Google Gemini API)" <<IAExterno>> {
+  [generarVariantesFarmaceuticas]
+  [generarSugerenciasFarmaceuticas]
+}
+
+' ═══════════════════════════════════════════════════════
+' RELACIONES
+' ═══════════════════════════════════════════════════════
+
+' Controllers → Routes → Frontend
+[api.js]        -down-> [medicamentos.js]     : HTTP REST
+[api.js]        -down-> [auth.js]             : HTTP REST
+[api.js]        -down-> [dashboard.js]        : HTTP REST
+[api.js]        -down-> [inventario.js]       : HTTP REST
+[api.js]        -down-> [notificaciones.js]   : HTTP REST
+[api.js]        -down-> [analytics.js]        : HTTP REST
+[api.js]        -down-> [reportes.js]         : HTTP REST
+[api.js]        -down-> [users.js]            : HTTP REST
+
+' Routes → Controllers
+[medicamentos.js]    ..> [medicamentoController]
+[auth.js]            ..> [authController]
+[dashboard.js]       ..> [dashboardController]
+[inventario.js]      ..> [inventarioController]
+[notificaciones.js]  ..> [notificacionController]
+[reportes.js]        ..> [reporteController]
+[analytics.js]       ..> [analyticsController]
+[users.js]           ..> [userController]
+
+' Controllers → Models
+[medicamentoController] -down-> [medicamentoModel]
+[medicamentoController] -down-> [reporteModel]
+[authController]        -down-> [userModel]
+[userController]        -down-> [userModel]
+[dashboardController]   -down-> [dashboardModel]
+[inventarioController]  -down-> [inventarioModel]
+[notificacionController]-down-> [notificacionModel]
+[reporteController]     -down-> [reporteModel]
+[analyticsController]   -down-> [analyticsModel]
+
+' Models → DB (connection pool)
+[medicamentoModel] -down-> [connection]
+[userModel]        -down-> [connection]
+[inventarioModel]  -down-> [connection]
+[notificacionModel]-down-> [connection]
+[reporteModel]     -down-> [connection]
+[dashboardModel]   -down-> [connection]
+[analyticsModel]   -down-> [connection]
+[alertaService]    -down-> [connection]
+
+' DB connection → MySQL tables
+[connection] -down-> [medicamentos]
+[connection] -down-> [users]
+[connection] -down-> [notificaciones]
+[connection] -down-> [historial_acciones]
+[connection] -down-> [movimientos_semana]
+[connection] -down-> [prediccion_demanda]
+[connection] -down-> [comparativa_mensual]
+[connection] -down-> [tendencias]
+[connection] -down-> [predicciones_criticas]
+
+' Controller → geminiService → IA Service (externo)
+[medicamentoController] -right-> [geminiService]
+[geminiService]         -right-> [generarVariantesFarmaceuticas]   : HTTPS API
+[geminiService]         -right-> [generarSugerenciasFarmaceuticas] : HTTPS API
+
+' catalogoFallback (fallback local)
+[medicamentoController] ..> [catalogoFallback] : fallback si Gemini falla
+
+' Frontend internal
+[Login]             -down-> [AuthContext]
+[Medicamentos]      -down-> [ModalDetalleMedicamento]
+[Medicamentos]      -down-> [ModalEditarMedicamento]
+[NuevoMedicamento]  -down-> [ModalRegistroLoteIA]
+[AuthContext]       -down-> [api.js]
+
+@enduml

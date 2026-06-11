@@ -1,0 +1,153 @@
+@startuml diagrama_componentes_actualizado
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam arrowColor #2C3E50
+skinparam arrowThickness 2
+
+' ─── Estilos de componentes ───────────────────────────
+skinparam component {
+  BackgroundColor<<Cliente>>    #EBF5FB
+  BorderColor<<Cliente>>        #2980B9
+  FontColor<<Cliente>>          #1A5276
+  FontStyle<<Cliente>>          bold
+
+  BackgroundColor<<Frontend>>   #F9EBEA
+  BorderColor<<Frontend>>       #C0392B
+  FontColor<<Frontend>>         #922B21
+  FontStyle<<Frontend>>         bold
+
+  BackgroundColor<<Backend>>    #FEF9E7
+  BorderColor<<Backend>>        #D4AC0D
+  FontColor<<Backend>>          #7D6608
+  FontStyle<<Backend>>          bold
+
+  BackgroundColor<<DB>>         #F5EEF8
+  BorderColor<<DB>>             #8E44AD
+  FontColor<<DB>>               #6C3483
+  FontStyle<<DB>>               bold
+
+  BackgroundColor<<Externo>>    #FFF3E0
+  BorderColor<<Externo>>        #E67E22
+  FontColor<<Externo>>          #BA4A00
+  FontStyle<<Externo>>          bold
+
+  BackgroundColor<<Servicio>>   #E8F8F5
+  BorderColor<<Servicio>>       #1ABC9C
+  FontColor<<Servicio>>         #0E6655
+}
+
+skinparam folder {
+  BackgroundColor #FFFFFF
+  BorderColor #7F8C8D
+  FontColor #34495E
+}
+
+skinparam node {
+  BackgroundColor<<Heroku>>     #F0FFF4
+  BorderColor<<Heroku>>         #27AE60
+  FontColor<<Heroku>>           #1E8449
+  FontStyle<<Heroku>>           bold
+
+  BackgroundColor<<Internet>>   #EAECEE
+  BorderColor<<Internet>>       #717D7E
+  FontColor<<Internet>>         #2C3E50
+}
+
+skinparam interface {
+  BackgroundColor #FDFEFE
+  BorderColor     #2C3E50
+}
+
+' ═══════════════════════════════════════════════════════
+' NODO CLIENTE
+' ═══════════════════════════════════════════════════════
+node "Dispositivo del Usuario\n(Navegador Web)" <<Cliente>> as BROWSER {
+  component "Ejecutor JS del Navegador\n(V8 / SpiderMonkey)" <<Cliente>> as NAV {
+    artifact "index.html" as HTML
+    artifact "bundle.js" as BUNDLE
+    artifact "styles.css" as CSS
+  }
+}
+
+' ═══════════════════════════════════════════════════════
+' COMPONENTE EXTERNO — IA SERVICE
+' ═══════════════════════════════════════════════════════
+node "☁  Google Cloud\n(Servicio Externo)" <<Internet>> as GCLOUD {
+  component "== Gemini IA API\n----\ngenerarSugerenciasFarmaceuticas()\ngenerarVariantesFarmaceuticas()" <<Externo>> as GEMINI
+}
+
+' Forzar posición visual: Google Cloud debajo de Navegador
+BROWSER -[hidden]down- GCLOUD
+
+' ═══════════════════════════════════════════════════════
+' NODO HEROKU
+' ═══════════════════════════════════════════════════════
+node "☁  Heroku Cloud\nmopgimed-sys.herokuapp.com" <<Heroku>> as HEROKU {
+
+  interface "HTTPS\n:443" as IHTTPS
+
+  ' ── FRONTEND ─────────────────────────────────────────
+  component "Frontend App\n(src/)" <<Frontend>> as FE {
+    component "== pages/\n----\nLogin.jsx\nDashboard.jsx\nMedicamentos.jsx\nNuevoMedicamento.jsx\nControlInventario.jsx\nReportes.jsx\nAnalytics.jsx\nNotificaciones.jsx\nUsuarios.jsx\nSemaforoDetalle.jsx" <<Frontend>> as PAGES
+    component "== components/\n----\nModalDetalleMedicamento.jsx\nModalEditarMedicamento.jsx\nModalRegistroLoteIA.jsx\nSidebar.jsx\nLoader.jsx" <<Frontend>> as COMPS
+    component "== context/\n----\nAuthContext.jsx" <<Frontend>> as AUTH
+    component "== services/\n----\napi.js" <<Frontend>> as APISVC
+  }
+
+  ' ── BACKEND ───────────────────────────────────────────
+  component "Backend Node.js\n(backend/)" <<Backend>> as BE {
+    component "== Raíz\n----\nindex.js" <<Backend>> as INDEX
+    component "== routes/\n----\nauth.js\nmedicamentos.js\ndashboard.js\ninventario.js\nnotificaciones.js\nreportes.js\nanalytics.js\nlaboratorios.js\nusers.js" <<Backend>> as ROUTES
+    component "== controllers/\n----\nauthController.js\nmedicamentoController.js\ndashboardController.js\ninventarioController.js\nnotificacionController.js\nreporteController.js\nanalyticsController.js\nuserController.js" <<Backend>> as CTRL
+    component "== models/\n----\nmedicamentoModel.js\nuserModel.js\ninventarioModel.js\nnotificacionModel.js\nreporteModel.js\ndashboardModel.js\nanalyticsModel.js" <<Backend>> as MODELS
+    component "== services/\n----\nalertaService.js\ngeminiService.js" <<Servicio>> as SERVICIOS
+    component "== db/\n----\nconnection.js" <<Backend>> as DBCONN
+    component "== data/\n----\ncatalogoFallback.js" <<Servicio>> as FALLBACK
+  }
+
+  ' ── BASE DE DATOS ──────────────────────────────────────
+  component "Motor Base de Datos\n(MySQL Daemon)" <<DB>> as DB {
+    component "db_mopgimed.sql" <<DB>> as SCHEMA {
+      component "== tablas/\n----\nmedicamentos\nusers\nnotificaciones\nhistorial_acciones\nmovimientos_semana\nprediccion_demanda\ncomparativa_mensual\ntendencias\npredicciones_criticas" <<DB>> as TABLAS
+    }
+  }
+
+}
+
+' ═══════════════════════════════════════════════════════
+' CONEXIONES ARQUITECTÓNICAS (Flujo de dependencias)
+' ═══════════════════════════════════════════════════════
+
+' Frontend interno (Dependencias lógicas de código)
+PAGES      -[hidden]down- APISVC
+COMPS      -[hidden]down- APISVC
+AUTH       -[hidden]down- APISVC
+PAGES      --> AUTH
+PAGES      --> COMPS
+PAGES      --> APISVC
+
+' Conexión Usuario a Frontend a través de HTTPS (Corregido para ortho)
+BROWSER ~~ IHTTPS : " Acceso Web"
+IHTTPS  --> FE    : " Sirve SPA"
+
+' FLUJO PRINCIPAL DE COMUNICACIÓN
+FE --> BE : " Peticiones HTTP\n (REST API JSON)"
+
+' DB a la izquierda del Backend
+BE -left-> DB : " Consultas SQL\n (TCP:3306)"
+
+' Backend interno
+ROUTES     --> CTRL
+CTRL       --> MODELS
+CTRL       --> SERVICIOS
+CTRL       --> FALLBACK
+MODELS     --> DBCONN
+SERVICIOS  --> DBCONN
+
+' Conexión de Backend a Servicio Externo (Google Cloud) a la derecha
+BE -right-> GEMINI : " Peticiones a Gemini IA\n (HTTPS)"
+
+@enduml

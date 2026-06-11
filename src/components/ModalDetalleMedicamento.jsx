@@ -22,14 +22,37 @@ export default function ModalDetalleMedicamento({ medicamento, onClose }) {
     estadoText = 'Bajo';
   }
 
-  // Formateo de fechas
+  // Formateo de fechas — normaliza DD/MM/YYYY o ISO a YYYY-MM-DD antes de parsear
   const formatFecha = (fechaStr) => {
     if (!fechaStr) return 'N/A';
     try {
-      return new Date(fechaStr).toLocaleDateString('es-ES', {
+      let normalizada = fechaStr;
+      // Si viene como DD/MM/YYYY lo convertimos a YYYY-MM-DD
+      if (typeof fechaStr === 'string' && fechaStr.includes('/')) {
+        const parts = fechaStr.split('/');
+        if (parts.length === 3) {
+          if (parts[2].length === 4) {
+            // DD/MM/YYYY → YYYY-MM-DD
+            normalizada = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          } else if (parts[0].length === 4) {
+            // YYYY/MM/DD → YYYY-MM-DD
+            normalizada = `${parts[0]}-${parts[1]}-${parts[2]}`;
+          }
+        }
+      }
+      // Si viene con 'T' (ISO completo) tomamos solo la parte de fecha
+      if (typeof normalizada === 'string' && normalizada.includes('T')) {
+        normalizada = normalizada.split('T')[0];
+      }
+      // Usamos la fecha en UTC para evitar desfase de zona horaria
+      const [year, month, day] = normalizada.split('-').map(Number);
+      const fecha = new Date(Date.UTC(year, month - 1, day));
+      if (isNaN(fecha.getTime())) return fechaStr;
+      return fecha.toLocaleDateString('es-ES', {
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
+        timeZone: 'UTC'
       });
     } catch {
       return fechaStr;

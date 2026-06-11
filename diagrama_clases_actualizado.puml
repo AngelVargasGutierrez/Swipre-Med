@@ -1,0 +1,539 @@
+@startuml diagrama_clases_actualizado
+
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam classBorderColor #4A90D9
+skinparam classHeaderBackgroundColor #D6EAF8
+skinparam classBackgroundColor #F4F9FF
+skinparam classFontStyle bold
+skinparam noteBackgroundColor #FFFDE7
+skinparam noteBorderColor #F9A825
+skinparam arrowColor #2C3E50
+skinparam packageBackgroundColor #FDFEFE
+skinparam packageBorderColor #85929E
+
+' =============================================
+' PAQUETE: BASE DE DATOS
+' =============================================
+package "Base de Datos (MySQL)" <<Database>> {
+
+  class Medicamento {
+    + id : INT <<PK>>
+    + codigo : VARCHAR
+    + nombre : VARCHAR
+    + laboratorio : VARCHAR
+    + lote : VARCHAR
+    + stock : INT
+    + stock_min : INT
+    + costo_unit : DECIMAL
+    + precio_venta : DECIMAL
+    + vencimiento : DATE
+    + r_sanitario : VARCHAR
+    + estado : ENUM[Normal,Bajo,Crítico]
+    + categoria : VARCHAR
+  }
+
+  class User {
+    + id : INT <<PK>>
+    + username : VARCHAR <<UK>>
+    + password : VARCHAR
+    + role : ENUM[admin,almacen,farmacia,jefatura,logistica]
+    + name : VARCHAR
+    + role_label : VARCHAR
+    + email : VARCHAR
+    + estado : ENUM[Activo,Inactivo]
+    + created_at : DATE
+  }
+
+  class Notificacion {
+    + id : INT <<PK>>
+    + tipo : VARCHAR
+    + titulo : VARCHAR
+    + descripcion : TEXT
+    + fecha : VARCHAR
+    + color : VARCHAR
+    + leida : BOOLEAN
+    + prioridad : VARCHAR
+  }
+
+  class HistorialAccion {
+    + id : INT <<PK>>
+    + fecha : VARCHAR
+    + usuario : VARCHAR
+    + accion : VARCHAR
+    + modulo : VARCHAR
+    + detalle : TEXT
+  }
+
+  class MovimientoSemana {
+    + id : INT <<PK>>
+    + dia : VARCHAR
+    + entradas : INT
+    + salidas : INT
+  }
+
+  class PrediccionDemanda {
+    + id : INT <<PK>>
+    + mes : VARCHAR
+    + real_val : DECIMAL
+    + prediccion : DECIMAL
+  }
+
+  class ComparativaMensual {
+    + id : INT <<PK>>
+    + mes : VARCHAR
+    + ventas : DECIMAL
+    + compras : DECIMAL
+  }
+
+  class Tendencia {
+    + id : INT <<PK>>
+    + categoria : VARCHAR
+    + cambio : DECIMAL
+    + positivo : BOOLEAN
+  }
+
+  class PrediccionCritica {
+    + id : INT <<PK>>
+    + nombre : VARCHAR
+    + stock_actual : INT
+    + fecha_predicha : DATE
+    + ordenar : INT
+    + prioridad : VARCHAR
+  }
+}
+
+' =============================================
+' PAQUETE: BACKEND - MODELOS
+' =============================================
+package "Backend — Models" <<Node>> {
+
+  class MedicamentoModel {
+    + findAll() : Medicamento[]
+    + findById(id) : Medicamento
+    + create(data) : Medicamento
+    + update(id, data) : Medicamento
+    + remove(id) : void
+    + getLaboratorios() : String[]
+    + getCategorias() : String[]
+    + registrarLote(id, data) : Medicamento
+    - mapRow(row) : Medicamento
+    - calcEstado(stock, stockMin) : String
+    - fmtFecha(dateVal) : String
+  }
+
+  class UserModel {
+    + findByCredentials(username, password) : User
+    + findAll() : User[]
+    + findByUsername(username) : User
+    + getEstado(id) : Object
+    + create(data) : INT
+    + update(id, data) : void
+    + updateEstado(id, nuevoEstado) : void
+    + ROLE_MENUS : Map
+  }
+
+  class InventarioModel {
+    + findAll() : Medicamento[]
+    + getTotales() : Object
+    - fmtFecha(dateVal) : String
+  }
+
+  class NotificacionModel {
+    + findAll() : Notificacion[]
+    + marcarLeida(id) : void
+    + marcarTodas() : void
+  }
+
+  class ReporteModel {
+    + getResumen() : Object
+    + getPorCategoria() : Object[]
+    + getHistorial() : HistorialAccion[]
+    + registrarAccion(usuario, accion, modulo, detalle) : void
+  }
+
+  class DashboardModel {
+    + getStats() : Object
+    + getStockPorCategoria() : Object[]
+    + getEstadoStock() : Object[]
+    + getMovimientosSemana() : MovimientoSemana[]
+    + getTop5Valor() : Object[]
+    + getAlertas() : Notificacion[]
+  }
+
+  class AnalyticsModel {
+    + getPrediccionDemanda() : PrediccionDemanda[]
+    + getComparativaMensual() : ComparativaMensual[]
+    + getTendencias() : Tendencia[]
+    + getPrediccionesCriticas() : PrediccionCritica[]
+    + getValorPorCategoria() : Object[]
+  }
+}
+
+' =============================================
+' PAQUETE: BACKEND - SERVICES
+' =============================================
+package "Backend — Services" <<Cloud>> {
+
+  class GeminiService {
+    - GEMINI_MODEL : String
+    - GEMINI_TIMEOUT_MS : INT
+    + generarSugerenciasFarmaceuticas(query) : VarianteIA[]
+    + generarVariantesFarmaceuticas(nombreBase) : VarianteIA[]
+    - fetchGemini(url, options) : Response
+    - parseJsonArray(text) : Object[]
+  }
+
+  class AlertaService {
+    + generarAlertas() : void
+    - diasRestantes(dateObj) : INT
+    - formatFecha(dateObj) : String
+  }
+}
+
+' =============================================
+' PAQUETE: BACKEND - CONTROLLERS
+' =============================================
+package "Backend — Controllers" <<Component>> {
+
+  class MedicamentoController {
+    + getAll(req, res) : void
+    + getOne(req, res) : void
+    + create(req, res) : void
+    + update(req, res) : void
+    + remove(req, res) : void
+    + getLaboratorios(req, res) : void
+    + getCategorias(req, res) : void
+    + getSugerenciasIA(req, res) : void
+    + getVariantesIA(req, res) : void
+    + buscarConIA(req, res) : void
+    + registrarLote(req, res) : void
+    - filtrarInventario(meds, query, sugs) : Medicamento[]
+    - variantesDesdeInventario(inv, base, lab) : VarianteIA[]
+    - combinarVariantes(gemini, fallback, inv, base) : VarianteIA[]
+    - vincularVarianteConInventario(v, inv) : VarianteIA
+    - fusionarVariantes(a, b, max) : VarianteIA[]
+  }
+
+  class AuthController {
+    + login(req, res) : void
+  }
+
+  class UserController {
+    + getAll(req, res) : void
+    + create(req, res) : void
+    + update(req, res) : void
+    + toggleEstado(req, res) : void
+  }
+
+  class DashboardController {
+    + getDashboard(req, res) : void
+  }
+
+  class InventarioController {
+    + getInventario(req, res) : void
+    + getTotales(req, res) : void
+  }
+
+  class NotificacionController {
+    + getAll(req, res) : void
+    + marcarLeida(req, res) : void
+    + marcarTodas(req, res) : void
+  }
+
+  class ReporteController {
+    + getResumen(req, res) : void
+  }
+
+  class AnalyticsController {
+    + getAnalytics(req, res) : void
+  }
+}
+
+' =============================================
+' PAQUETE: FRONTEND - SERVICES
+' =============================================
+package "Frontend — Services" <<Boundary>> {
+
+  class ApiService {
+    - BASE : String
+    + login(username, password) : Promise
+    + getDashboard() : Promise
+    + getMedicamentos() : Promise
+    + getMedicamento(id) : Promise
+    + createMedicamento(data) : Promise
+    + updateMedicamento(id, data) : Promise
+    + deleteMedicamento(id) : Promise
+    + registrarLote(id, data) : Promise
+    + buscarMedicamentosIA(q, laboratorio) : Promise
+    + getSugerenciasIA(q) : Promise
+    + getVariantesIA(base, laboratorio) : Promise
+    + getLaboratorios() : Promise
+    + getCategorias() : Promise
+    + getInventario() : Promise
+    + getNotificaciones() : Promise
+    + marcarLeida(id) : Promise
+    + marcarTodas() : Promise
+    + getAnalytics() : Promise
+    + getReporteResumen() : Promise
+    + getUsers() : Promise
+    + createUser(data) : Promise
+    + updateUser(id, data) : Promise
+    + toggleUserEstado(id, operador) : Promise
+    - req(path, options) : Promise
+  }
+
+  class AuthContext {
+    - user : UserSession
+    + login(username, password) : Boolean
+    + logout() : void
+    + useAuth() : AuthContext
+  }
+}
+
+' =============================================
+' PAQUETE: FRONTEND - PAGES
+' =============================================
+package "Frontend — Pages" <<Boundary>> {
+
+  class PageLogin {
+    + render() : JSX
+  }
+
+  class PageDashboard {
+    - stats : Object
+    - stockPorCategoria : Object[]
+    - movimientosSemana : Object[]
+    + render() : JSX
+  }
+
+  class PageMedicamentos {
+    - medicamentos : Medicamento[]
+    - search : String
+    - variantes : VarianteIA[]
+    - motorIA : String
+    - form : MedicamentoForm
+    - medicamentoDetalle : Medicamento
+    - medicamentoEditar : Medicamento
+    + registrarMedicamento(e) : void
+    + elegirVariante(v) : void
+    + render() : JSX
+  }
+
+  class PageInventario {
+    - inventario : Medicamento[]
+    - totales : Object
+    + render() : JSX
+  }
+
+  class PageReportes {
+    - resumen : Object
+    - historial : HistorialAccion[]
+    + render() : JSX
+  }
+
+  class PageAnalytics {
+    - prediccionDemanda : Object[]
+    - comparativaMensual : Object[]
+    - tendencias : Object[]
+    + render() : JSX
+  }
+
+  class PageNotificaciones {
+    - notificaciones : Notificacion[]
+    + render() : JSX
+  }
+
+  class PageUsuarios {
+    - users : User[]
+    - form : UserForm
+    + render() : JSX
+  }
+}
+
+' =============================================
+' PAQUETE: FRONTEND - COMPONENTS
+' =============================================
+package "Frontend — Components" <<Boundary>> {
+
+  class ModalDetalleMedicamento {
+    - medicamento : Medicamento
+    + formatFecha(fechaStr) : String
+    + render() : JSX
+  }
+
+  class ModalEditarMedicamento {
+    - formData : MedicamentoForm
+    - saving : Boolean
+    + formatForInput(dateStr) : String
+    + handleSave(e) : void
+    + render() : JSX
+  }
+
+  class ModalRegistroLoteIA {
+    - form : LoteForm
+    + render() : JSX
+  }
+
+  class Sidebar {
+    + render() : JSX
+  }
+
+  class Loader {
+    + render() : JSX
+  }
+}
+
+' =============================================
+' ENTIDADES DE DATOS (DTOs / Value Objects)
+' =============================================
+package "Entidades / DTOs" <<Entity>> {
+
+  class VarianteIA {
+    + nombre : String
+    + categoria : String
+    + presentacion : String
+    + fuente : String
+    + enInventario : Boolean
+    + medicamentoId : INT
+    + codigo : String
+    + laboratorio : String
+    + stockActual : INT
+    + medicamento : Medicamento
+  }
+
+  class UserSession {
+    + id : INT
+    + username : String
+    + name : String
+    + role : String
+    + role_label : String
+    + email : String
+    + menus : String[]
+  }
+
+  class MedicamentoForm {
+    + nombre : String
+    + laboratorio : String
+    + lote : String
+    + stock : String
+    + vencimiento : String
+    + rSanitario : String
+    + costoUnit : String
+    + precioVenta : String
+  }
+}
+
+' =============================================
+' RELACIONES: Models → DB
+' =============================================
+MedicamentoModel ..> Medicamento : <<consulta>>
+UserModel         ..> User        : <<consulta>>
+InventarioModel   ..> Medicamento : <<consulta>>
+NotificacionModel ..> Notificacion : <<consulta>>
+ReporteModel      ..> HistorialAccion : <<consulta>>
+DashboardModel    ..> Medicamento : <<consulta>>
+DashboardModel    ..> MovimientoSemana : <<consulta>>
+DashboardModel    ..> Notificacion : <<consulta>>
+AnalyticsModel    ..> PrediccionDemanda : <<consulta>>
+AnalyticsModel    ..> ComparativaMensual : <<consulta>>
+AnalyticsModel    ..> Tendencia : <<consulta>>
+AnalyticsModel    ..> PrediccionCritica : <<consulta>>
+AlertaService     ..> Notificacion : <<genera>>
+AlertaService     ..> Medicamento : <<lee>>
+
+' =============================================
+' RELACIONES: Controllers → Models / Services
+' =============================================
+MedicamentoController --> MedicamentoModel : usa
+MedicamentoController --> ReporteModel     : registrarAccion
+MedicamentoController --> GeminiService    : busqueda IA
+MedicamentoController ..> VarianteIA       : produce
+
+AuthController      --> UserModel     : usa
+UserController      --> UserModel     : usa
+DashboardController --> DashboardModel : usa
+InventarioController --> InventarioModel : usa
+NotificacionController --> NotificacionModel : usa
+ReporteController   --> ReporteModel  : usa
+AnalyticsController --> AnalyticsModel : usa
+
+' =============================================
+' RELACIONES: Frontend → ApiService
+' =============================================
+PageLogin          --> ApiService : login()
+PageDashboard      --> ApiService : getDashboard()
+PageMedicamentos   --> ApiService : getMedicamentos()\nregistrarLote()\ngetVariantesIA()
+PageInventario     --> ApiService : getInventario()
+PageReportes       --> ApiService : getReporteResumen()
+PageAnalytics      --> ApiService : getAnalytics()
+PageNotificaciones --> ApiService : getNotificaciones()\nmarcarLeida()
+PageUsuarios       --> ApiService : getUsers()\ncreateUser()\nupdateUser()
+
+' =============================================
+' RELACIONES: Pages → Components
+' =============================================
+PageMedicamentos --> ModalDetalleMedicamento : abre
+PageMedicamentos --> ModalEditarMedicamento  : abre
+
+ModalDetalleMedicamento --> Medicamento : muestra
+ModalEditarMedicamento  --> Medicamento : edita
+ModalEditarMedicamento  --> ApiService  : updateMedicamento()
+ModalRegistroLoteIA     --> ApiService  : registrarLote()
+
+' =============================================
+' RELACIONES: Auth
+' =============================================
+AuthContext --> ApiService  : login()
+AuthContext --> UserSession : gestiona
+PageLogin   --> AuthContext : usa
+
+' =============================================
+' RELACIONES: ApiService → Backend
+' =============================================
+ApiService --> MedicamentoController : HTTP /api/medicamentos
+ApiService --> AuthController        : HTTP /api/auth
+ApiService --> DashboardController   : HTTP /api/dashboard
+ApiService --> InventarioController  : HTTP /api/inventario
+ApiService --> NotificacionController : HTTP /api/notificaciones
+ApiService --> AnalyticsController   : HTTP /api/analytics
+ApiService --> ReporteController     : HTTP /api/reportes
+ApiService --> UserController        : HTTP /api/users
+
+' =============================================
+' NOTAS
+' =============================================
+note right of GeminiService
+  Llama a Google Gemini API
+  para sugerencias farmacéuticas
+  con timeout configurable (6s).
+  Fallback: CatalogoLocal.
+end note
+
+note right of AlertaService
+  Ejecutado periódicamente.
+  Genera alertas automáticas de
+  stock crítico/bajo y vencimientos.
+  Limpia alertas no leídas antiguas.
+end note
+
+note bottom of UserModel
+  Roles disponibles:
+  admin | almacen | farmacia
+  jefatura | logistica
+  Cada rol tiene acceso
+  a menús específicos (ROLE_MENUS).
+end note
+
+note bottom of MedicamentoModel
+  calcEstado():
+  stock <= stockMin*0.5 → Crítico
+  stock < stockMin      → Bajo
+  else                  → Normal
+end note
+
+@enduml
